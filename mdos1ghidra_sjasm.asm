@@ -37,7 +37,6 @@ RST20
     db          0FFh
     db          0FFh
     db          0FFh
-;undefined RST28()
 RST28
     jp          CALLZX1
     db          0FFh
@@ -53,31 +52,23 @@ RST30
     db          0FFh
 MASK_INT
     jp          INTERRUPT
-                            ;undefined CALLZX1()
-          ;local_res0    undefined2           0                      ;             ;ram:0044(*),ram:004d(*)
-          ;local_2       undefined2          -2                      ;             ;ram:0057(*)
 CALLZX1
     push        af
     ld          a,(SNAPINF)
     and         a
     jp          nz,SNAPRET
     pop         af
-    ; ex          (sp=>local_res0),hl
     ex (sp),hl
     ld          (SAVE_DE),de
     ld          e,(hl)
     inc         hl
     ld          d,(hl)
     inc         hl
-    ; ex          (sp=>local_res0),hl
     ex (sp),hl
     push        hl
-    ; ld          hl,0x3ef7
     ld hl,SYSFLAG
-    ; ld          (hl=>SYSFLAG),0x4f
     ld (hl),0x4f
     ld          hl,0x0
-    ; ex          (sp=>local_2),hl
     ex (sp),hl
     push        de
     ld          de,(SAVE_DE)
@@ -100,20 +91,16 @@ START1
     pop         bc
     ld          (IREG2),bc
     push        hl
-    ; ld          hl,0x3eef
     ld hl,SYSMRK
     ld          b,0x8
 CHCOLD
     ld          a,h
     xor         l
-    ; cp          (hl=>SYSMRK)
     cp (hl)
     jr          nz,COLD
     inc         hl
     djnz        CHCOLD
-    ; ld          a,(hl=>DAT_ram_3ef1)
     ld a,(hl)
-    ; ld          (hl=>DAT_ram_3ef1),0x20
     ld (hl),0x20
     cp          0x4f
     jp          z,ROMRET
@@ -126,13 +113,10 @@ CHCOLD
     push        de
     ld          b,h
     ld          c,l
-    ; ld          hl,0x19a
     ld hl,IORTAB
 TESTROUT
-    ; ld          e,(hl=>IORTAB)
     ld e,(hl)
     inc         hl
-    ; ld          d,(hl=>IORTAB+1)
     ld d,(hl)
     inc         hl
     ex          de,hl
@@ -141,10 +125,8 @@ TESTROUT
     jr          z,COLD
     sbc         hl,bc
     ex          de,hl
-    ; ld          e,(hl=>WORD_ram_019c)
     ld e,(hl)
     inc         hl
-    ; ld          d,(hl=>WORD_ram_019c+1)
     ld d,(hl)
     inc         hl
     jr          nz,TESTROUT
@@ -312,7 +294,6 @@ SPECCOMM
     ld          b,h
     call        BCPRT
     jp          STANDROM
-;undefined PRTMES()
 PRTMES
     ex          de,hl
     inc         a
@@ -330,7 +311,6 @@ PMESSAGE
     push        hl
     res         0x7,a
     cp          0x23
-    ; ld          hl,0x3e80
     ld hl,DNZONE1
     jr          z,PRNAME
     cp          0x40
@@ -348,7 +328,6 @@ PRNAME
     push        bc
     ld          b,0xa
 PRNAMEL
-    ; ld          a,(hl=>FNZONE1)
     ld a,(hl)
     and         a
     jr          z,STOPPRNM
@@ -368,9 +347,7 @@ ERRR
     and         a
     jp          nz,SNAPRET
     pop         af
-    ; ld          hl,0x5c3a
     ld hl,ERR_NR
-    ; ld          (hl=>ERR_NR),a
     ld (hl),a
     push        hl
     ld          hl,(CH_ADD)
@@ -420,12 +397,9 @@ LAB_ram_023b
     ld          (STKEND),hl
     pop         bc
 COMMAND
-    ; ld          ix,0x5ff
     ld ix,SYNTAB
 SETCOMM
-    ; ld          l,(ix+0x0)=>SYNTAB
     ld l,(ix+0)
-    ; ld          h,(ix+0x1)=>SYNTAB+1
     ld h,(ix+1)
     ld          a,h
     or          l
@@ -433,9 +407,7 @@ SETCOMM
     ld          de,(T_ADDR)
     sbc         hl,de
     jr          nz,NEXTCOM
-    ; ld          l,(ix+0x2)=>WORD_ram_0601
     ld l,(ix+2)
-    ; ld          h,(ix+0x3)=>WORD_ram_0601+1
     ld h,(ix+3)
     sbc         hl,bc
     jr          nz,NEXTCOM
@@ -445,9 +417,7 @@ SETCOMM
     ex          de,hl
     and         a
     sbc         hl,de
-    ; ld          e,(ix+0x4)=>WORD_ram_0603
     ld e,(ix+4)
-    ; ld          d,(ix+0x5)=>WORD_ram_0603+1
     ld d,(ix+5)
     sbc         hl,de
     jr          z,DOCOM
@@ -472,9 +442,7 @@ NOCOM
     ld          (hl),0x0
     dec         hl
     ld          (hl),0x0
-    ; ld          hl,0x3ef7
     ld hl,SYSFLAG
-    ; ld          (hl=>SYSFLAG),0x45
     ld (hl),0x45
 ERROR
     call        DSKSTP
@@ -487,51 +455,33 @@ DOCOM
     ld          hl,0x2e1
     push        hl
     ld          (T_ADDR),hl
-    ; ld          l,(ix+offset WORD_ram_0605 >>8)
     ld l,(ix+6)
-    ; ld          h,(ix+0x7)=>WORD_ram_0605+1
     ld h,(ix+7)
-    ; jp          (hl=>CATFN)
     jp (hl)
 RETURN
     call        DSKSTP
     jp          STANDROM
 SNAPR
     ld          (SAVE_SP),sp
-    ; ld          sp,0x3ffe
     ld sp,SNAP_SP
-    ; push        af=>DAT_ram_3ffc
     push af
-    ; push        bc=>DAT_ram_3ffa
     push bc
-    ; push        de=>DAT_ram_3ff8
     push de
-    ; push        hl=>DAT_ram_3ff6
     push hl
     exx
-    ; ex          af,AF_
     ex af,af'
-    ; push        af=>DAT_ram_3ff4
     push af
-    ; push        bc=>DAT_ram_3ff2
     push bc
-    ; push        de=>DAT_ram_3ff0
     push de
-    ; push        hl=>DAT_ram_3fee
     push hl
-    ; push        ix=>DAT_ram_3fec
     push ix
-    ; push        iy=>DAT_ram_3fea
     push iy
     ld          bc,(IREG2)
-    ; push        bc=>SVREG
     push bc
     im          1
     ld          a,0xff
     ld          (SNAPINF),a
-    ; ld          hl,0x3eaa
     ld hl,ACDRIVE
-    ; ld          de,0x3e80
     ld de,DNZONE1
     ld          bc,0xa
     ldir
@@ -567,7 +517,6 @@ SNAPRET
     ld          sp,0x3fe8
     xor         a
     ld          (SNAPINF),a
-    ; pop         af=>SVREG
     pop af
     jp          pe,SNPRT1
     ld          I,a
@@ -575,59 +524,37 @@ SNAPRET
     jr          z,NOIM2
     im          2
 NOIM2
-    ; pop         iy=>DAT_ram_3fea
     pop iy
-    ; pop         ix=>DAT_ram_3fec
     pop ix
-    ; pop         hl=>DAT_ram_3fee
     pop hl
-    ; pop         de=>DAT_ram_3ff0
     pop de
-    ; pop         bc=>DAT_ram_3ff2
     pop bc
-    ; pop         af=>DAT_ram_3ff4
     pop af
-    ; ex          af,AF_
     ex af,af'
     exx
-    ; pop         hl=>DAT_ram_3ff6
     pop hl
-    ; pop         de=>DAT_ram_3ff8
     pop de
-    ; pop         bc=>DAT_ram_3ffa
     pop bc
-    ; pop         af=>DAT_ram_3ffc
     pop af
     ld          sp,(SAVE_SP)
     jp          STANDROM
 SNPRT1
-    ld          I,a
+    ld          i,a
     cp          0x3f
     jr          z,NOIM21
     im          2
 NOIM21
-    ; pop         iy=>DAT_ram_3fea
     pop iy
-    ; pop         ix=>DAT_ram_3fec
     pop ix
-    ; pop         hl=>DAT_ram_3fee
     pop hl
-    ; pop         de=>DAT_ram_3ff0
     pop de
-    ; pop         bc=>DAT_ram_3ff2
     pop bc
-    ; pop         af=>DAT_ram_3ff4
     pop af
-    ; ex          af,AF_
     ex af,af'
     exx
-    ; pop         hl=>DAT_ram_3ff6
     pop hl
-    ; pop         de=>DAT_ram_3ff8
     pop de
-    ; pop         bc=>DAT_ram_3ffa
     pop bc
-    ; pop         af=>DAT_ram_3ffc
     pop af
     ld          sp,(SAVE_SP)
     ei
@@ -641,13 +568,11 @@ SNPLOA
 SNAMNM
     db          "SNAPSHOT00S"
 SYSMSG
-    ; ds          AAh,AAh,AAh,AAh,AAh,AAh,AAh,AAh,AAh,a...
-    ; 28 "*"+128
+    ; 29 "*"+128
     db 0AAH,0AAH,0AAH,0AAH,0AAH,0AAH,0AAH,0AAH
     db 0AAH,0AAH,0AAH,0AAH,0AAH,0AAH,0AAH,0AAH
     db 0AAH,0AAH,0AAH,0AAH,0AAH,0AAH,0AAH,0AAH
-    db 0AAH,0AAH,0AAH,0AAH
-    db 0AAH
+    db 0AAH,0AAH,0AAH,0AAH,0AAH
     db          "File not foun",0E4h
     db          "File exist",0F3h
     db          "Disk ful",0ECh
@@ -817,13 +742,13 @@ NOOUT
     pop         af
     ld          hl,0x3e00
     add         hl,bc
-    ; ld          (hl),a=>DRPARZN
     ld (hl),a
     ret
 LETFNATTR
     RST         RST18
     cp          0xab
-    ld          hl,0x723
+    ; ld          hl,0x723
+    ld hl,LETATTR
     jr          z,SELLLET
     cp          0xa8
     ld          hl,0x778
@@ -849,7 +774,6 @@ SELLLET
     dw          1C8Ch
     call        ISSYNCONTR
     ld          hl,(VALSYX)
-    ; jp          (hl=>LETFN)
     jp (hl)
 LETATTR
     RST         RST28
@@ -863,7 +787,6 @@ LETATTR
     and         a
     jr          z,ATRNAME
 ANALATR
-    ; ld          hl,0x127b
     ld hl,DEFATTR
     ld          a,(de)
     and         0xdf
@@ -871,7 +794,6 @@ ANALATR
     push        de
     ld          e,0x80
 RFINDATR
-    ; cp          (hl=>DEFATTR)
     cp (hl)
     inc         hl
     jr          z,SETATR
@@ -887,7 +809,6 @@ SETATR
     pop         de
     djnz        ANALATR
 ATRNAME
-    ; ex          af,AF_
     ex af,af'
     call        DIVSTRING
     call        TESTNM
@@ -897,16 +818,13 @@ ATRNAME
     call        FIRSTMASK
     jp          nz,REPORTS
 WATTR
-    ; ex          af,AF_
     ex af,af'
     push        hl
     ex          (sp),ix
-    ; ld          (ix+0x14)=>LAB_ram_1291,a
     ld (ix+0x14),a
     ex          (sp),ix
     pop         hl
     call        WSCADR
-    ; ex          af,AF_
     ex af,af'
     call        NEXTMASK
     ret         nz
@@ -924,10 +842,8 @@ NOEXIST
     ld          bc,0x15
     ldir
     call        ANSTRING
-    ; ld          hl,0x3e94
     ld hl,EXTE1
     ld          a,(EXTE2)
-    ; cp          (hl=>EXTE1)
     cp (hl)
     jr          z,EXTISSOME
 REPORTJ
@@ -1016,12 +932,10 @@ PRINTSEC
 PRINTALL
     ld          de,0x200
 PRINTBUFF
-    ; ld          hl,0x3a00
     ld hl,AUXBUF
 PRNTLOOP
     push        de
     push        hl
-    ; ld          a,(hl=>AUXBUF)
     ld a,(hl)
     RST         RST10
     pop         hl
@@ -1051,12 +965,10 @@ L_LIST
     ld          de,0x971
     call        PRTMES
     ld          a,0x41
-    ; ld          ix,0x3e00
     ld ix,DRPARZN
 RINFO2
     push        ix
     push        af
-    ; ld          a,(ix+0x2)=>DAT_ram_3e02
     ld a,(ix+2)
     and         a
     jr          z,RINFO1
@@ -1078,12 +990,10 @@ RINFO1
     ld          de,0x971
     call        PRTMES
     ld          a,0x41
-    ; ld          ix,0x3e00
     ld ix,DRPARZN
 RINFO4
     push        ix
     push        af
-    ; bit         0x0,(ix+0x0)=>DRPARZN
     bit 0,(ix+0)
     jr          z,RINFO3
     pop         af
@@ -1110,12 +1020,10 @@ RINFO3
     call        PRTMES
     call        INITALLDR
     ld          b,0x4
-    ; ld          hl,0x3e30
     ld hl,DRNAMES
 RINFO5
     push        bc
     push        hl
-    ; ld          a,(hl=>DRNAMES)
     ld a,(hl)
     and         a
     jr          z,RINFO6
@@ -1177,36 +1085,30 @@ RINFO6
 INFMES
     db          80h
     db          "MDOS Release: 1.0 (01-Sep-92)\r"
-    ; db          "(C) Didaktik Skalica 1992\r",08Dh
     db "(C) Didaktik Skalica 1992",0Dh,08Dh
-    ; db          "Drives Defined  :",0A0h,":,",0A0h,"\b\...
     db "Drives Defined  :"," "+080h
     db ":,"," "+80h
-    ; db          "Drives Installed:",0A0h,"\b\b \r"
     db 8,8,32,0Dh
     db "Drives Installed:",0A0h
     db 8,8,32,0Dh
-    ; db          "Current Device  :",0A0h,":\r\r"
     db "Current Device  :",0A0h
     db ":",0Dh,0Dh
-    ; db          "Volumes Available:",08Dh,"\r"
     db "Volumes Available:",08Dh
     db 0Dh
-    ; db          "Length of Program  :",0A0h,"\r"
     db "Length of Program  :",0A0h
     db 0Dh
-    ; db          "Length of Variables:",0A0h,"\r\r"
     db "Length of Variables:",0A0h
     db 0Dh,0Dh
-    ; db          "Top of RAM :",0A0h,"\r"
     db "Top of RAM :",0A0h
     db 0Dh
     db          "Free memory:",0A0h
 RESTORE
-    ld          hl,0x2296
+    ; ld          hl,0x2296
+    ld hl,BWRITE
     jr          RRPRG
 READ
-    ld          hl,0x22a5
+    ; ld          hl,0x22a5
+    ld hl,BREAD
 RRPRG
     ld          (VALSYX),hl
     RST         RST18
@@ -1246,10 +1148,8 @@ RRPRGPAR
     jp          nz,REPORTS
     ld          a,0x11
     call        ADDHLA
-    ; ld          a,(hl=>BWRITE)
     ld a,(hl)
     inc         hl
-    ; ld          h=>LAB_ram_2297,(hl)
     ld h,(hl)
     ld          l,a
     pop         bc
@@ -1389,7 +1289,6 @@ OPENOUTF
     jr          nz,OPENNULF
     call        GETATR
     bit         0x2,a
-    ; jp          z,REPORTF
     jp z,WPRTER
     call        DFILER
 OPENNULF
@@ -1766,10 +1665,8 @@ INCPOINTERS
     dec         hl
     ld          (hl),c
     dec         hl
-    ; ld          (hl),d=>LAB_ram_023b
     ld (hl),d
     dec         hl
-    ; ld          (hl),e=>LAB_ram_023a
     ld (hl),e
     SCF
     jp          STANDROM
@@ -1781,10 +1678,8 @@ WRTOSTR1
 WRTOSTR
     ei
     add         hl,de
-    ; ld          e,(hl=>LAB_ram_023a)
     ld e,(hl)
     inc         hl
-    ; ld          d,(hl=>LAB_ram_023b)
     ld d,(hl)
     inc         hl
     ld          c,(hl)
@@ -1894,18 +1789,14 @@ NULENGTH
     pop         hl
     ld          de,0xfff7
     add         hl,de
-    ; ld          a,(hl=>DAT_ram_fff9)
     ld a,(hl)
     add         a,0x2
-    ; ld          (hl),a=>DAT_ram_fff9
     ld (hl),a
     jr          nc,STRWOK
     inc         hl
-    ; inc         (hl=>DAT_ram_fffa)
     inc (hl)
     jr          nz,STRWOK
     inc         hl
-    ; inc         (hl=>DAT_ram_fffb)
     inc (hl)
 STRWOK
     call        WFATIFCH
@@ -1975,7 +1866,6 @@ MULT10
     djnz        MULT10
 SETNUM
     pop         hl
-    ; ld          (hl=>ASCIINM),0x30
     ld (hl),0x30
     push        hl
 SUBNUM
@@ -1991,7 +1881,6 @@ SUBNUM
     ld          (ix+0x1),l
     ld          (ix+0x2),h
     pop         hl
-    ; inc         (hl=>ASCIINM)
     inc (hl)
     push        hl
     jr          SUBNUM
@@ -2000,24 +1889,19 @@ ISLOW
     inc         hl
     dec         c
     jr          nz,CALCDIV
-    ; ld          hl,0x3eda
     ld hl,ASCIINM
     ld          b,0x7
 CLSNUL
-    ; ld          a,(hl=>ASCIINM)
     ld a,(hl)
     cp          0x30
     jr          nz,PRNUM
-    ; ld          (hl=>ASCIINM),0x20
     ld (hl),0x20
     inc         hl
     djnz        CLSNUL
 PRNUM
-    ; ld          hl,0x3eda
     ld hl,ASCIINM
     ld          b,0x8
 PRNUM1
-    ; ld          a,(hl=>ASCIINM)
     ld a,(hl)
     push        hl
     push        bc
@@ -2032,7 +1916,6 @@ TESTNM
     and         a
     jp          z,REPORTF
     ret
-;undefined BCPRT()
 BCPRT
     RST         RST28
     dw          02D2Bh
@@ -2119,10 +2002,8 @@ ANALFNM
     jr          REPORTF
 NOPARCAT
     call        TESTSYN1
-    ; ld          hl,0x3e8a
     ld hl,FNZONE1
     ld          de,0x3e8b
-    ; ld          (hl=>FNZONE1),0x3f
     ld (hl),0x3f
     ld          bc,0xa
     ldir
@@ -2133,9 +2014,7 @@ MOVEWDNM
     ldir
     ret
 SETWDNM
-    ; ld          hl,0x3e80
     ld hl,DNZONE1
-    ; ld          a,(hl=>DNZONE1)
     ld a,(hl)
     and         a
     ret         nz
@@ -2182,19 +2061,15 @@ MAKENAME
     and         a
     ret
 ARRANGNM
-    ; ld          hl,0x3e8a
     ld hl,FNZONE1
-    ; ld          a,(hl=>FNZONE1)
     ld a,(hl)
     and         a
     jr          nz,ARNGNM1
-    ; ld          (hl=>FNZONE1),'*'
     ld (hl),"*"
 ARNGNM1
     ld          b,0xa
     ld          c,0x0
 ARRLOPPLD
-    ; ld          a,(hl=>FNZONE1)
     ld a,(hl)
     and         a
     jr          z,ARRANGEXT
@@ -2212,14 +2087,11 @@ ARRANGEXT
     RR          c
     ret
 FILLMARK
-    ; ld          (hl=>DAT_ram_3e8b),'?'
     ld (hl),"?"
     inc         hl
     dec         b
 FILLMARK1
-    ; ld          a,(hl=>DAT_ram_3e8c)
     ld a,(hl)
-    ; ld          (hl=>DAT_ram_3e8c),'?'
     ld (hl),"?"
     inc         hl
     and         a
@@ -2253,12 +2125,10 @@ EXTIS
 EXTTAB
     db          "PNCBQS?"
 ANALWDNM
-    ; ld          hl,0x3e80
     ld hl,DNZONE1
 ANALWNM
     ld          b,0xa
 ANALWDCH
-    ; ld          a,(hl=>DNZONE1)
     ld a,(hl)
     and         a
     jr          z,ANALWDEN
@@ -2267,21 +2137,17 @@ ANALWDCH
     inc         hl
     djnz        ANALWDCH
 ANALWDEN
-    ; ld          hl,0x3e80
     ld hl,DNZONE1
-    ; ld          a,(hl=>DNZONE1)
     ld a,(hl)
     and         a
     ret         Z
     inc         hl
-    ; ld          a,(hl=>DAT_ram_3e81)
     ld a,(hl)
 ANALWDNM1
     and         a
     SCF
     ret         nz
     dec         hl
-    ; ld          a,(hl=>DNZONE1)
     ld a,(hl)
     call        UPPER
     sub          'A'
@@ -2396,15 +2262,11 @@ PRINTINF
     call        PRTMES
     call        FREECOUNT
     push        ix
-    ; ld          ix,0x3ed4
     ld ix,SV24NM
     sla         c
     rl          b
-    ; ld          (ix+0x0)=>SV24NM,0x0
     ld (ix+0),0
-    ; ld          (ix+0x1)=>DAT_ram_3ed5,c
     ld (ix+1),c
-    ; ld          (ix+0x2)=>DAT_ram_3ed6,b
     ld (ix+2),b
     call        NUM24B
     pop         ix
@@ -2456,19 +2318,15 @@ CATFNLOOP
     ld          a,0xb
     call        ADDHLA
     push        ix
-    ; ld          ix,0x3ed4
     ld ix,SV24NM
     ld          a,(hl)
-    ; ld          (ix+0x0)=>SV24NM,a
     ld (ix+0),a
     inc         hl
     ld          a,(hl)
-    ; ld          (ix+0x1)=>DAT_ram_3ed5,a
     ld (ix+1),a
     ld          a,0x9
     call        ADDHLA
     ld          a,(hl)
-    ; ld          (ix+0x2)=>DAT_ram_3ed6,a
     ld (ix+2),a
     ld          a,0x17
     RST         RST10
@@ -2486,12 +2344,10 @@ CATFNLOOP
     RST         RST10
     pop         bc
     push        bc
-    ; ld          hl,0x127b
     ld hl,DEFATTR
     ld          e,0x8
 CATFNATT
     rl          b
-    ; ld          a,(hl=>DEFATTR)
     ld a,(hl)
     inc         hl
     jr          c,CATFNAPR
@@ -2553,11 +2409,9 @@ ERASE
     call        SETWDNM
     call        ARRANGNM
     jp          z,REPORTF
-    ; ld          hl,0x3e8a
     ld hl,FNZONE1
     ld          b,0xa
 ERASEALL
-    ; ld          a,(hl=>FNZONE1)
     ld a,(hl)
     inc         hl
     cp          '?'
@@ -2579,9 +2433,7 @@ MOVEACT
     call        ISSYNCONTR
     call        DIVSTRING
     call        ANALWDNM
-    ; ld          hl,0x3e80
     ld hl,DNZONE1
-    ; ld          a,(hl=>DNZONE1)
     ld a,(hl)
     and         a
     jp          z,REPORTB
@@ -2693,12 +2545,10 @@ FORMSOK
     cp          c
     jr          nz,FORMTEST2
     djnz        FORMTEST1
-    ; ld          hl,0x3c00
     ld hl,FATBUF
     ld          e,l
     ld          d,h
     inc         de
-    ; ld          (hl=>FATBUF),0x0
     ld (hl),0
     ld          bc,0x1ff
     ldir
@@ -2729,11 +2579,9 @@ FORMSOK
     ld          bc,0x0
     ld          a,(WORKDR)
     call        BWRITE
-    ; ld          hl,0x3c00
     ld hl,FATBUF
     push        hl
     ld          de,0x3c01
-    ; ld          (hl=>FATBUF),0xdd
     ld (hl),0xdd
     ld          bc,0x1ff
     ldir
@@ -2813,13 +2661,9 @@ WFATEND
     pop         bc
     sla         c
     rl          b
-    ; ld          ix,0x3ed4
     ld ix,SV24NM
-    ; ld          (ix+0x0)=>SV24NM,0x0
     ld (ix+0),0
-    ; ld          (ix+0x1)=>DAT_ram_3ed5,c
     ld (ix+1),c
-    ; ld          (ix+0x2)=>DAT_ram_3ed6,b
     ld (ix+2),b
     call        NUM24B
     ld          a,0x3
@@ -3508,12 +3352,10 @@ VERIFYCONT
     or          l
     jr          z,VERCONT1
     sbc         hl,de
-    ; jr          c,REPORTX
     jr c,VERIFIERR
     jr          z,VERCONT1
     ld          a,(ix+0x0)
     cp          0x3
-    ; jr          nz,REPORTX
     jr nz,VERIFIERR
 VERCONT1
     pop         hl
@@ -3565,10 +3407,8 @@ LOADDATA
     or          l
     jr          z,LOADDATA1
     dec         hl
-    ; ld          b,(hl=>DAT_ram_3fff)
     ld b,(hl)
     dec         hl
-    ; ld          c,(hl=>SAVE_SP)
     ld c,(hl)
     dec         hl
     inc         bc
@@ -3660,7 +3500,6 @@ MERGECONT
 LOAR01
     push        hl
     push        ix
-    ; ld          a,(ix-0x11)=>DAT_ram_ffef
     ld a,(ix-0x11)
     ld          (ix+0x0),a
     call        FINTYP
@@ -3707,7 +3546,6 @@ FINTYP
     ld          a,(ix+0x0)
     ld          hl,0x10db
     call        ADDHLA
-    ; ld          a,(hl=>EXTTAB)
     ld a,(hl)
     ld          (EXTE1),a
     ret
@@ -3733,7 +3571,6 @@ SAVRUN
     call        GETATR
     bit         0x2,a
     jr          nz,SAVRUN1
-; REPORTF
 WPRTER
     ld          a,0x2e
     jp          ERRR
@@ -3766,7 +3603,6 @@ SLMASTR
     jr          z,SLMNODR
     inc         a
 SLMNODR
-    ; ex          af,AF_
     ex af,af'
     call        ARRANGNM
     jp          nz,REPORTF
@@ -3796,9 +3632,7 @@ COPYF
     call        VERIFY
     jp          z,REPORTF
     ld          a,(EXTE1)
-    ; ld          hl,0x3ea9
     ld hl,EXTE2
-    ; cp          (hl=>EXTE2)
     cp (hl)
     jp          nz,REPORTF
     ld          b,0xff
@@ -3849,12 +3683,9 @@ COPYLOOP
     ld          de,0x3eb4
     ld          bc,0x20
     ldir
-    ; ld          hl,0x3ec5
     ld hl,SVFSC
-    ; ld          e,(hl=>SVFSC)
     ld e,(hl)
     inc         hl
-    ; ld          d,(hl=>DAT_ram_3ec6)
     ld d,(hl)
     ld          (STARTADR),de
     call        CHNGDRNM
@@ -3862,9 +3693,7 @@ COPYLOOP
     push        bc
     inc         b
     jr          z,COPYF6
-    ; ld          hl,0x3eb4
     ld hl,SVHEAD
-    ; ld          a,(hl=>SVHEAD)
     ld a,(hl)
     ld          (EXTE1),a
     inc         hl
@@ -3889,7 +3718,6 @@ COPYF6
     jr          COPYFILE
 COPYFONE
     ld          a,(EXTE1)
-    ; ld          (de=>DAT_ram_3ec6),a
     ld (de),a
     inc         de
     ld          hl,0x3e8a
@@ -4041,11 +3869,9 @@ CHNGDRNM
     ld          bc,0x15
     push        af
 CHANGDR1
-    ; ld          a,(de=>DNZONE2)
     ld a,(de)
     LDI
     dec         hl
-    ; ld          (hl=>DNZONE1),a
     ld (hl),a
     inc         hl
     jp          pe,CHANGDR1
@@ -4436,7 +4262,6 @@ DSIDE
     jr          c,TRACKOK
     sub         (ix+0x6)
     cp          0x8
-    ; jr          nc,REPORTX
     jr nc,SETDSE
     ld          a,(DAT_ram_3ab2)
 TRACKOK
@@ -4468,7 +4293,6 @@ NOLINH
     pop         de
     pop         bc
     ret
-; REPORTX
 SETDSE  ; error Bad device type
     ld          a,0x20
     jp          ERRR
@@ -4710,7 +4534,6 @@ SAVEFILE1
     or          0xe
 SAVEFILE2
     ld          d,a
-    ; call        FIEMPTYFAT
     call SEACHN
     jr          z,SAVEFILE3
     ld          hl,0x0
@@ -4853,18 +4676,14 @@ TESTMSK
     ld          c,a
     ld          a,(EXTE1)
     cp          '?'
-    ; jr          z,TESTNM
     jr z,TESTMSK2
     cp          (hl)
     jr          nz,NONAME
-; TESTNM
 TESTMSK2
     inc         hl
     ld          b,0xa
-    ; ld          de,0x3e8a
     ld de,FNZONE1
 TSTNMLOOP
-    ; ld          a,(de=>FNZONE1)
     ld a,(de)
     cp          0x3f
     jr          z,NEXTTEST
@@ -4940,10 +4759,8 @@ DRVCMP
     add         a,c
     ld          c,a
     ld          b,0x0
-    ; ld          ix,0x3e00
     ld ix,DRPARZN
     add         ix,bc
-    ; bit         0x0,(ix+0x0)=>DRPARZN
     bit 0,(ix+0)
     ret
 KEYMSG
@@ -5082,9 +4899,7 @@ LAB_ram_22a6
     ld          hl,0x236a
 BRWR0
     ld          (MODJPA2),hl
-    ; ld          hl,0x3e63
     ld hl,MODJP1
-    ; ld          (hl=>MODJP1),0xc3
     ld (hl),0xc3
     pop         hl
 BRWL0
@@ -5226,9 +5041,7 @@ DOWDCOM
     call        OUTTODR
     pop         af
     push        hl
-    ; ld          hl,0x3eeb
     ld hl,SVSIDE
-    ; or          (hl=>SVSIDE)
     or (hl)
     pop         hl
 DOWDCREP
@@ -5300,13 +5113,11 @@ DFORMA
     or          b
     ld          bc,0x3
 FSECOLOR
-    ; ld          (hl=>DAT_ram_5800),a
     ld (hl),a
     inc         hl
     djnz        FSECOLOR
     dec         c
     jr          nz,FSECOLOR
-    ; ld          hl,0x4000
     ld hl,VRAM
     in          a,(DAT_io_0083)
     out         (DAT_io_00fe),a
@@ -5327,27 +5138,21 @@ MKFDATA
     ld          b,0x3
     call        FILLCONST
     ld          a,0xfe
-    ; ld          (hl=>DAT_ram_4000),a
     ld (hl),a
     inc         hl
     in          a,(DAT_io_0083)
-    ; ld          (hl=>DAT_ram_4001),a
     ld (hl),a
     inc         hl
     ld          a,(SVSIDE)
-    ; ld          (hl=>DAT_ram_4002),a
     ld (hl),a
     inc         hl
     ld          a,e
-    ; ld          (hl=>DAT_ram_4003),a
     ld (hl),a
     inc         hl
     ld          a,0x2
-    ; ld          (hl=>DAT_ram_4004),a
     ld (hl),a
     inc         hl
     ld          a,0xf7
-    ; ld          (hl=>DAT_ram_4005),a
     ld (hl),a
     inc         hl
     ld          a,0x4e
@@ -5360,7 +5165,6 @@ MKFDATA
     ld          b,0x3
     call        FILLCONST
     ld          a,0xfb
-    ; ld          (hl=>DAT_ram_4006),a
     ld (hl),a
     inc         hl
     ld          a,0xe5
@@ -5368,7 +5172,6 @@ MKFDATA
     call        FILLCONST
     call        FILLCONST
     ld          a,0xf7
-    ; ld          (hl=>DAT_ram_4007),a
     ld (hl),a
     inc         hl
     ld          a,0x4e
@@ -5707,375 +5510,3 @@ DEFADD  equ 0x5c0b
 STRMS6  equ 0x5c16
 ; ERR_SP  equ 0x5c3d
     SAVEBIN "mdos10.bin",0,16384
-
-/*
-ram:25f0         -> ram:37ff         [UNDEFINED BYTES REMOVED]
-
-                            DIRBUF
-ram:3800                        undefined1  ??
-                            DIRBUF_1
-ram:3801                        undefined1  ??
-
-ram:3802         -> ram:39ff         [UNDEFINED BYTES REMOVED]
-
-                            AUXBUF
-ram:3a00                        undefined1  ??
-                            DAT_ram_3a01
-ram:3a01                        undefined1  ??
-
-ram:3a02         -> ram:3ab0         [UNDEFINED BYTES REMOVED]
-
-                            DAT_ram_3ab1
-ram:3ab1                        undefined1  ??
-                            DAT_ram_3ab2
-ram:3ab2                        undefined1  ??
-                            DAT_ram_3ab3
-ram:3ab3                        undefined1  ??
-
-ram:3ab4         -> ram:3abf         [UNDEFINED BYTES REMOVED]
-
-                            DAT_ram_3ac0
-ram:3ac0                        undefined1  ??
-                            DAT_ram_3ac1
-ram:3ac1                        undefined1  ??
-
-ram:3ac2         -> ram:3bff         [UNDEFINED BYTES REMOVED]
-
-                            FATBUF
-ram:3c00                        undefined1  ??
-                            FATBUF1
-ram:3c01                        undefined1  ??
-                            DAT_ram_3c02
-ram:3c02                        undefined1  ??
-
-ram:3c03         -> ram:3c7f         [UNDEFINED BYTES REMOVED]
-
-                            DAT_ram_3c80
-ram:3c80                        undefined1  ??
-                            DAT_ram_3c81
-ram:3c81                        undefined1  ??
-
-ram:3c82         -> ram:3cbf         [UNDEFINED BYTES REMOVED]
-
-                            DAT_ram_3cc0
-ram:3cc0                        undefined1  ??
-                            DAT_ram_3cc1
-ram:3cc1                        undefined1  ??
-
-ram:3cc2         -> ram:3dff         [UNDEFINED BYTES REMOVED]
-
-                            DRPARZN
-ram:3e00                        undefined1  ??
-                            DAT_ram_3e01
-ram:3e01                        undefined1  ??
-                            DAT_ram_3e02
-ram:3e02                        undefined1  ??
-
-ram:3e03         -> ram:3e0b         [UNDEFINED BYTES REMOVED]
-
-                            DAT_ram_3e0c
-ram:3e0c                        undefined1  ??
-
-ram:3e0d         -> ram:3e0d         [UNDEFINED BYTES REMOVED]
-
-                            DAT_ram_3e0e
-ram:3e0e                        undefined1  ??
-
-ram:3e0f         -> ram:3e2f         [UNDEFINED BYTES REMOVED]
-
-                            DRNAMES
-ram:3e30                        undefined1  ??
-
-ram:3e31         -> ram:3e5f         [UNDEFINED BYTES REMOVED]
-
-                            DEBUG
-ram:3e60                        undefined1  ??
-                            SNPCOUNT
-ram:3e61                        undefined1  ??
-                            AIFASK
-ram:3e62                        undefined1  ??
-                            MODJP1
-ram:3e63                        undefined1  ??
-
-ram:3e64         -> ram:3e65         [UNDEFINED BYTES REMOVED]
-
-                            SAVE_DE
-ram:3e66                        undefined2  ??
-
-ram:3e68         -> ram:3e6a         [UNDEFINED BYTES REMOVED]
-
-                            WORKDR
-ram:3e6b                        undefined1  ??
-                            CHNGFLAG
-ram:3e6c                        undefined1  ??
-                            FATSC
-ram:3e6d                        undefined1  ??
-                            FATDR
-ram:3e6e                        undefined1  ??
-                            ADRSCTR
-ram:3e6f                        undefined2  ??
-                            ADRDR
-ram:3e71                        undefined1  ??
-                            SVADRA
-ram:3e72                        undefined2  ??
-                            STARTADR
-ram:3e74                        undefined2  ??
-                            LENDAT
-ram:3e76                        undefined2  ??
-                            VALSYX
-ram:3e78                        undefined1  ??
-
-ram:3e79         -> ram:3e79         [UNDEFINED BYTES REMOVED]
-
-                            VALSYY
-ram:3e7a                        undefined2  ??
-                            HEAD20
-ram:3e7c                        undefined1  ??
-
-ram:3e7d         -> ram:3e7d         [UNDEFINED BYTES REMOVED]
-
-                            SVFRSC
-ram:3e7e                        undefined2  ??
-                            DNZONE1
-ram:3e80                        undefined1  ??
-                            DAT_ram_3e81
-ram:3e81                        undefined1  ??
-                            DAT_ram_3e82
-ram:3e82                        undefined1  ??
-
-ram:3e83         -> ram:3e89         [UNDEFINED BYTES REMOVED]
-
-                            FNZONE1
-ram:3e8a                        undefined1  ??
-                            DAT_ram_3e8b
-ram:3e8b                        undefined1  ??
-                            DAT_ram_3e8c
-ram:3e8c                        undefined1  ??
-                            DAT_ram_3e8d
-ram:3e8d                        undefined1  ??
-
-ram:3e8e         -> ram:3e93         [UNDEFINED BYTES REMOVED]
-
-                            EXTE1
-ram:3e94                        undefined1  ??
-                            DNZONE2
-ram:3e95                        undefined1  ??
-                            DAT_ram_3e96
-ram:3e96                        undefined1  ??
-
-ram:3e97         -> ram:3e9e         [UNDEFINED BYTES REMOVED]
-
-                            FNZONE2
-ram:3e9f                        undefined1  ??
-                            DAT_ram_3ea0
-ram:3ea0                        undefined1  ??
-
-ram:3ea1         -> ram:3ea8         [UNDEFINED BYTES REMOVED]
-
-                            EXTE2
-ram:3ea9                        undefined1  ??
-                            ACDRIVE
-ram:3eaa                        undefined1  ??
-                            DAT_ram_3eab
-ram:3eab                        undefined1  ??
-
-ram:3eac         -> ram:3eb3         [UNDEFINED BYTES REMOVED]
-
-                            SVHEAD
-ram:3eb4                        undefined1  ??
-                            DAT_ram_3eb5
-ram:3eb5                        undefined1  ??
-                            DAT_ram_3eb6
-ram:3eb6                        undefined1  ??
-
-ram:3eb7         -> ram:3ebe         [UNDEFINED BYTES REMOVED]
-
-                            SVINF
-ram:3ebf                        undefined1  ??
-                            DAT_ram_3ec0
-ram:3ec0                        undefined1  ??
-
-ram:3ec1         -> ram:3ec4         [UNDEFINED BYTES REMOVED]
-
-                            SVFSC
-ram:3ec5                        undefined1  ??
-                            DAT_ram_3ec6
-ram:3ec6                        undefined1  ??
-                            DAT_ram_3ec7
-ram:3ec7                        undefined1  ??
-                            DAT_ram_3ec8
-ram:3ec8                        undefined1  ??
-
-ram:3ec9         -> ram:3ed3         [UNDEFINED BYTES REMOVED]
-
-                            SV24NM
-ram:3ed4                        undefined1  ??
-                            DAT_ram_3ed5
-ram:3ed5                        undefined1  ??
-                            DAT_ram_3ed6
-ram:3ed6                        undefined1  ??
-
-ram:3ed7         -> ram:3ed9         [UNDEFINED BYTES REMOVED]
-
-                            ASCIINM
-ram:3eda                        undefined1  ??
-                            DAT_ram_3edb
-ram:3edb                        undefined1  ??
-
-ram:3edc         -> ram:3ee1         [UNDEFINED BYTES REMOVED]
-
-                            INTCNT
-ram:3ee2                        undefined1  ??
-                            TERADR2
-ram:3ee3                        undefined2  ??
-                            HERRSP2
-ram:3ee5                        undefined2  ??
-                            DOSIX2
-ram:3ee7                        undefined2  ??
-                            SELSTA1
-ram:3ee9                        undefined1  ??
-
-ram:3eea         -> ram:3eea         [UNDEFINED BYTES REMOVED]
-
-                            SVSIDE
-ram:3eeb                        undefined1  ??
-                            IREG2
-ram:3eec                        undefined2  ??
-                            SNAPINF
-ram:3eee                        undefined1  ??
-                            SYSMRK
-ram:3eef                        undefined1  ??
-                            DAT_ram_3ef0
-ram:3ef0                        undefined1  ??
-                            DAT_ram_3ef1
-ram:3ef1                        undefined1  ??
-
-ram:3ef2         -> ram:3ef6         [UNDEFINED BYTES REMOVED]
-
-                            SYSFLAG
-ram:3ef7                        undefined1  ??
-
-ram:3ef8         -> ram:3f7d         [UNDEFINED BYTES REMOVED]
-
-                            DAT_ram_3f7e
-ram:3f7e                        undefined2  ??
-
-ram:3f80         -> ram:3fe7         [UNDEFINED BYTES REMOVED]
-
-                            SVREG
-ram:3fe8                        undefined2  ??
-                            DAT_ram_3fea
-ram:3fea                        undefined2  ??
-                            DAT_ram_3fec
-ram:3fec                        undefined2  ??
-                            DAT_ram_3fee
-ram:3fee                        undefined2  ??
-                            DAT_ram_3ff0
-ram:3ff0                        undefined2  ??
-                            DAT_ram_3ff2
-ram:3ff2                        undefined2  ??
-                            DAT_ram_3ff4
-ram:3ff4                        undefined2  ??
-                            DAT_ram_3ff6
-ram:3ff6                        undefined2  ??
-                            DAT_ram_3ff8
-ram:3ff8                        undefined2  ??
-                            DAT_ram_3ffa
-ram:3ffa                        undefined2  ??
-                            DAT_ram_3ffc
-ram:3ffc                        undefined2  ??
-                            SAVE_SP
-ram:3ffe                        undefined1  ??
-
-ram:3fff         -> ram:3fff         [UNDEFINED BYTES REMOVED]
-
-                            DAT_ram_4000
-ram:4000                        undefined1  ??
-                            DAT_ram_4001
-ram:4001                        undefined1  ??
-                            DAT_ram_4002
-ram:4002                        undefined1  ??
-                            DAT_ram_4003
-ram:4003                        undefined1  ??
-                            DAT_ram_4004
-ram:4004                        undefined1  ??
-                            DAT_ram_4005
-ram:4005                        undefined1  ??
-                            DAT_ram_4006
-ram:4006                        undefined1  ??
-                            DAT_ram_4007
-ram:4007                        undefined1  ??
-
-ram:4008         -> ram:57ff         [UNDEFINED BYTES REMOVED]
-
-                            DAT_ram_5800
-ram:5800                        undefined1  ??
-                            DAT_ram_5801
-ram:5801                        undefined1  ??
-                            DAT_ram_5802
-ram:5802                        undefined1  ??
-
-ram:5803         -> ram:5c07         [UNDEFINED BYTES REMOVED]
-
-                            LAST_K
-ram:5c08                        undefined1  ??
-
-ram:5c09         -> ram:5c39         [UNDEFINED BYTES REMOVED]
-
-                            ERR_NR
-ram:5c3a                        undefined1  ??
-
-ram:5c3b         -> ram:5c3c         [UNDEFINED BYTES REMOVED]
-
-                            ERR_SP
-ram:5c3d                        undefined2  ??
-
-ram:5c3f         -> ram:5c4a         [UNDEFINED BYTES REMOVED]
-
-                            VARS
-ram:5c4b                        undefined2  ??
-
-ram:5c4d         -> ram:5c4e         [UNDEFINED BYTES REMOVED]
-
-                            CHANS
-ram:5c4f                        undefined2  ??
-                            CURCHL
-ram:5c51                        undefined2  ??
-                            PROG
-ram:5c53                        undefined2  ??
-
-ram:5c55         -> ram:5c58         [UNDEFINED BYTES REMOVED]
-
-                            E_LINE
-ram:5c59                        undefined2  ??
-
-ram:5c5b         -> ram:5c5c         [UNDEFINED BYTES REMOVED]
-
-                            CH_ADD
-ram:5c5d                        undefined2  ??
-                            X_PTR
-ram:5c5f                        undefined2  ??
-
-ram:5c61         -> ram:5c64         [UNDEFINED BYTES REMOVED]
-
-                            STKEND
-ram:5c65                        undefined2  ??
-
-ram:5c67         -> ram:5c73         [UNDEFINED BYTES REMOVED]
-
-                            T_ADDR
-ram:5c74                        undefined2  ??
-
-ram:5c76         -> ram:5c8c         [UNDEFINED BYTES REMOVED]
-
-                            ATTR_P
-ram:5c8d                        undefined1  ??
-
-ram:5c8e         -> ram:5cb1         [UNDEFINED BYTES REMOVED]
-
-                            RAMTOP
-ram:5cb2                        undefined2  ??
-
-ram:5cb4         -> ram:fffe         [UNDEFINED BYTES REMOVED]
-
-*/
