@@ -1668,7 +1668,7 @@ INCPOINTERS
     ld (hl),d
     dec         hl
     ld (hl),e
-    SCF
+    scf
     jp          STANDROM
 WRTOSTR2
     ld          hl,0x23a
@@ -1732,7 +1732,7 @@ NO512B
     call        BREADA
     pop         de
     pop         ix
-    SCF
+    scf
     ret
 ISLAST
     pop         hl
@@ -2049,7 +2049,7 @@ MAKENAME
     cp          ':'
     ret         Z
     cp          '.'
-    SCF
+    scf
     ret         Z
     ld          (de),a
     inc         de
@@ -2145,7 +2145,7 @@ ANALWDEN
     ld a,(hl)
 ANALWDNM1
     and         a
-    SCF
+    scf
     ret         nz
     dec         hl
     ld a,(hl)
@@ -3314,7 +3314,7 @@ SAVETYPE0
     ld          (ix+0x0),0x0
     ld          hl,(E_LINE)
     ld          de,(PROG)
-    SCF
+    scf
     sbc         hl,de
     ld          (ix+0xb),l
     ld          (ix+0xc),h
@@ -3388,7 +3388,7 @@ LOADCONT1
     ld          l,(ix-0x6)
     ld          h,(ix-0x5)
     ex          de,hl
-    SCF
+    scf
     sbc         hl,de
     jr          c,LOADDATA
 LOADCONT2
@@ -3442,7 +3442,7 @@ LOADDATA1
     inc         hl
     push        hl
     pop         ix
-    SCF
+    scf
     ld          a,0xff
     jp          LOADBLOCK
 LOADPROG
@@ -3540,7 +3540,7 @@ LOADBEND
     ld          de,(LENDAT)
     add         ix,de
     xor         a
-    SCF
+    scf
     ret
 FINTYP
     ld          a,(ix+0x0)
@@ -3893,7 +3893,7 @@ SETCOPYN1
     cp          0x3f
     jr          nz,SETCOPYN2
     pop         af
-    SCF
+    scf
     ret
 SETCOPYN2
     pop         af
@@ -4794,10 +4794,10 @@ KEYMSG
     ld          a,(LAST_K)
     and         0xdf
     cp          'R'
-    SCF
+    scf
     ret         Z
     cp          'P'
-    SCF
+    scf
     ret         Z
     and         a
     ret
@@ -5277,7 +5277,7 @@ NOD40IN801
     ld          (DOSIX2),ix
     pop         de
     pop         hl
-    SCF
+    scf
     ret
 FORFINDTR
     push        hl
@@ -5363,7 +5363,7 @@ LPNOTDRQ
     xor         a
     ld          (INTCNT),a
     dec         a
-    SCF
+    scf
     ret
 INVALRET
     ld          sp,(HERRSP2)
