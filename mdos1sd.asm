@@ -5794,30 +5794,10 @@ ADD_LBA_OFF
     adc hl,de
     pop de
     ret
-; a>disk
-; b>track
-; c>sector
-; hl>where
-; e>retry count
-; c<result
-; b*9 + (svside+1)*c
 
-; staci pouzit FYZLOG
-DREADSD
-    push ix
-    push hl
-    ld a,(WORKDR)
-    call GETIMGSTAT
-    bit 0,(hl)
-    jr z,DREADSD_NR
-
-    push hl ; hl=DIMAGESTAT
-
-    ; call FYZLOG
-    ; hl = logsector
-    ; pop de
-    ; ex de,hl
-
+; hl>DIMAGESTAT
+; hlde<abs LBA sector
+FYZLOGSD
     ld l,b
     ld h,0
     push hl
@@ -5829,10 +5809,31 @@ DREADSD
     ; add hl,hl ; h=h*2
     ld b,0
     add hl,bc   ; add sector
+
+    ret
+
+; a>disk
+; b>track
+; c>sector
+; hl>where
+; e>retry count
+; c<result
+; b*9 + (svside+1)*c
+; staci pouzit FYZLOG
+DREADSD
+    push ix
+    push hl
+    ld a,(WORKDR)
+    call GETIMGSTAT
+    bit 0,(hl)
+    jr z,DREADSD_NR
+
+    push hl ; hl=DIMAGESTAT
+
+    call FYZLOGSD
     pop de
     ex de,hl    ; hl = DIMAGESTAT
                 ; de = MDOS logical sector
-
     call ADD_LBA_OFF
             ; hlde=sektor
     pop ix  ; ix = addr to read
@@ -5840,11 +5841,7 @@ DREADSD
 SD_READ:
 	; hlde = sector
 	; ix = to address
-	ld b,16
-	ld a,0ffh
-sdrdl1:
-	out (SPI_PORT),a
-	djnz sdrdl1
+    call SDIDLE
 ;----
     ; ld a,(card_select)
     ld a,SD_1
@@ -5881,13 +5878,7 @@ sdrdl1:
 	out (OUT_PORT),a
 ;----
 
-	ld b,16
-	ld a,0ffh
-sdrdl2
-	; in a,(SPI_PORT)
-	out (SPI_PORT),a
-	djnz sdrdl2
-
+    call SDIDLE
     ld a,e  ; restore R1
 
 
@@ -5914,18 +5905,7 @@ DWRITESD
     jr nz,DWRITESD_WP
 
     push hl ; hl=DIMAGESTAT
-
-    ld l,b
-    ld h,0
-    push hl
-    add hl,hl   ; *2
-    add hl,hl   ; *4
-    add hl,hl   ; *8
-    pop de
-    add hl,de   ; *9
-    ; add hl,hl ; h=h*2
-    ld b,0
-    add hl,bc   ; add sector
+    call FYZLOGSD
     pop de
     ex de,hl    ; hl = DIMAGESTAT
                 ; de = MDOS logical sector
@@ -5937,12 +5917,7 @@ SD_WRITE:
 	; hlde = sector
 	; ix = from address
 
-	ld b,16
-	ld a,0ffh
-sdwr1:
-	; in a,(SPI_PORT)
-	out (SPI_PORT),a
-	djnz sdwr1
+    call SDIDLE
 ;----
     ld a,SD_1
 	out (OUT_PORT),a
@@ -5983,12 +5958,7 @@ wbsy:
 	out (OUT_PORT),a
 ;----
 
-	ld b,16
-	ld a,0ffh
-sdwr2:
-	; in a,(SPI_PORT)
-	out (SPI_PORT),a
-	djnz sdwr2
+    call SDIDLE
 
 	ld a,e
 	and 01fh
@@ -6007,6 +5977,14 @@ DWRITESD_WP
 DWSDERREX
     pop hl
     jr DWRITESD_ERR
+
+SDIDLE
+	ld b,16
+	ld a,0ffh
+sdidl1
+	out (SPI_PORT),a
+	djnz sdidl1
+    ret
 
 SD_SENDCMD:
 	ld c,SPI_PORT
