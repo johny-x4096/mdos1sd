@@ -1138,7 +1138,9 @@ browser_action
     ldir
 
     call get_drvstat
-    ld a,64
+    ld a,(act_sd_drv)
+    set 6,a
+    ; ld a,64
     ; ld (DIMAGESTAT),a
     ld (hl),a
     inc hl
@@ -1284,6 +1286,8 @@ fpage
     db 0
 act_mdos_drv
     db 0
+act_sd_drv
+    db 1
 fentryes
     ds 4*max_files_per_page ; dir pos
 browser_pages

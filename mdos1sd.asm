@@ -1188,26 +1188,27 @@ RINFO6
     ld          a,0xd
     RST         RST10
     ret
-INFMES
-    db 80h
-    db "MDOS Release: 1.0 (01-Sep-92)\r"
-    db "(C) Didaktik Skalica 1992",0Dh,08Dh
-    db "Drives Defined  :"," "+080h
-    db ":,"," "+80h
-    db 8,8,32,0Dh
-    db "Drives Installed:",0A0h
-    db 8,8,32,0Dh
-    db "Current Device  :",0A0h
-    db ":",0Dh,0Dh
-    db "Volumes Available:",08Dh
-    db 0Dh
-    db "Length of Program  :",0A0h
-    db 0Dh
-    db "Length of Variables:",0A0h
-    db 0Dh,0Dh
-    db "Top of RAM :",0A0h
-    db 0Dh
-    db          "Free memory:",0A0h
+; INFMES
+;     db 80h
+;     db "MDOS Release: 1.0 (01-Sep-92)\r"
+;     db "(C) Didaktik Skalica 1992",0Dh,08Dh
+;     db "Drives Defined  :"," "+080h
+;     db ":,"," "+80h
+;     db 8,8,32,0Dh
+;     db "Drives Installed:",0A0h
+;     db 8,8,32,0Dh
+;     db "Current Device  :",0A0h
+;     db ":",0Dh,0Dh
+;     db "Volumes Available:",08Dh
+;     db 0Dh
+;     db "Length of Program  :",0A0h
+;     db 0Dh
+;     db "Length of Variables:",0A0h
+;     db 0Dh,0Dh
+;     db "Top of RAM :",0A0h
+;     db 0Dh
+;     db          "Free memory:",0A0h
+    ORG 0x0A4B
 RESTORE
     ; ld          hl,0x2296
     ld hl,BWRITE
@@ -5483,7 +5484,7 @@ DRVSELOUT
 TESTDR
     ; CALL DRVSEL
     push hl
-    call GETIMGSTAT
+    call SELIMGSTAT
     bit 6,(hl)      ; disk image mounted?
     jr nz,TESTDR_RET
     xor a           ; pokud neni namountovan image
@@ -5645,7 +5646,29 @@ SYSMSG
     db          "All data will be discarded !  ",0A0h
     db          "File too lon",0E7h
 
-
+INFMES
+    db 80h
+    db "MDOS Release: 1.0 (01-Sep-92)\r"
+    db "(C) Didaktik Skalica 1992",0Dh
+    db "SD version by Johny-X & Flyyn 2026",0Dh
+    db "build ",__TIME__,"/",__DATE__,0Dh,08Dh
+    
+    db "Drives Defined  :"," "+080h
+    db ":,"," "+80h
+    db 8,8,32,0Dh
+    db "Drives Installed:",0A0h
+    db 8,8,32,0Dh
+    db "Current Device  :",0A0h
+    db ":",0Dh,0Dh
+    db "Volumes Available:",08Dh
+    db 0Dh
+    db "Length of Program  :",0A0h
+    db 0Dh
+    db "Length of Variables:",0A0h
+    db 0Dh,0Dh
+    db "Top of RAM :",0A0h
+    db 0Dh
+    db          "Free memory:",0A0h
 
 LOAFND_      ; 0x1FA5
     push        hl
@@ -5752,10 +5775,15 @@ DIMAGESTAT
     ; db 0,0,0,0
     ; db 0
     ; db 0,0,0,0
-
+SDDRVB
+    db SD_1
+SDDRIVEBYTES
+    db SD_0
+    db SD_1
 ; a > drive 0-1 (0-3)
 ; hl < DISK IMAGE STATUS
-GETIMGSTAT
+; (SDDRVB)<SD DRIVE ACTIVE byte
+SELIMGSTAT
     ld l,a
     ld h,0
     push hl
@@ -5765,6 +5793,18 @@ GETIMGSTAT
     add hl,de   ; *5
     ld de,DIMAGESTAT
     add hl,de
+    push hl
+    push de
+    ld a,(hl)
+    and 1
+    ld l,a
+    ld h,0
+    ld de,SDDRIVEBYTES
+    add hl,de
+    ld a,(hl)
+    ld (SDDRVB),a
+    pop de
+    pop hl
     ret
 
 
@@ -5824,7 +5864,7 @@ DREADSD
     push ix
     push hl
     ld a,(WORKDR)
-    call GETIMGSTAT
+    call SELIMGSTAT
     bit 6,(hl)
     jr z,DREADSD_NR
 
@@ -5844,7 +5884,8 @@ SD_READ:
     call SDIDLE
 ;----
     ; ld a,(card_select)
-    ld a,SD_1
+    ; ld a,SD_1
+    ld a,(SDDRVB)
 	out (OUT_PORT),a
 ;----
 	; hlde = sector
@@ -5898,7 +5939,7 @@ DWRITESD
     push hl
     
     ld a,(WORKDR)
-    call GETIMGSTAT
+    call SELIMGSTAT
     bit 6,(hl)
     jr z,DWRITESD_NR
     bit 7,(hl)
@@ -5919,7 +5960,8 @@ SD_WRITE:
 
     call SDIDLE
 ;----
-    ld a,SD_1
+    ; ld a,SD_1
+    ld a,(SDDRVB)
 	out (OUT_PORT),a
 ;----	
 	ld a,CMD_24
