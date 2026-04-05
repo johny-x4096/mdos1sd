@@ -616,12 +616,15 @@ main_draw
     ld b,12
     call w_print_b
 
+
     ; ld hl,(w_scraddr+1)
     ; inc hl
     ; ld (w_scraddr+1),hl
     ; ld hl,ico_lock
     ; call w_char_hl
-
+    ld a,(DIMAGESTAT)
+    bit 7,a
+    call main_draw_lock
     call w_newline
 
     call w_print_i
@@ -629,6 +632,9 @@ main_draw
     ld hl,DNAMES+12
     ld b,12
     call w_print_b
+    ld a,(DIMAGESTAT+5)
+    bit 7,a
+    call main_draw_lock
     call w_newline
 
     call w_print_i
@@ -645,6 +651,23 @@ main_draw
     ld hl,main_select
     jp set_state
 
+; nz>draw space
+; z>draw lock
+main_draw_lock
+    ld hl,(w_scraddr+1)
+    inc hl
+    ld (w_scraddr+1),hl
+
+    jr z,1f
+    ld hl,ico_lock
+    jr 2f
+1
+    ld hl,font  ; font begins with space
+2
+
+    call w_char_hl  
+    ret
+
 main_select
     cp 0
     ret z
@@ -654,9 +677,8 @@ main_select
     jp z,w_select_down
     cp 'e'
     jp z,main_eject
-    ; cp 'w'
-    ; jp z,exit
-    ; jp z,main_wprotect
+    cp 'w'
+    jp z,main_wprotect_tgl
     cp 's'
     jp z,snapshot
     cp 27
@@ -664,6 +686,14 @@ main_select
     cp 13
     ret nz
     ld hl,main_action
+    jp set_state
+
+main_wprotect_tgl
+    call get_drvstat
+    ld a,(hl)
+    xor 128
+    ld (hl),a
+    ld hl,main_draw
     jp set_state
 
 main_action
