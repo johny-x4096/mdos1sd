@@ -528,6 +528,9 @@ SNAPR
     ; pokud SNAPSHOT pokracuj
     ; jinak SNAPRET
 
+    ex af,af'
+    
+
     ld hl,8192+3
     ld de,DIMAGESTAT
     ld b,10
@@ -541,11 +544,9 @@ SNAPR
     out (DIVPORT),a
     inc hl
     inc de
-    dec b
-    jr nz,1b
-    ; ld bc,10
-    ; ldir
-
+    ; dec b
+    ; jr nz,1b
+    djnz 1b
 
     ld a,2
     out (DIVPORT),a
@@ -556,7 +557,9 @@ SNAPR
     ld a,0
     out (DIVPORT),a
 
-    jp SNAPRET
+    ex af,af'
+    cp 's'
+    jp nz,SNAPRET
 
 
     ld          a,0xff
@@ -5022,7 +5025,8 @@ BWRITE
     jr          BRWR0
 BFORMA
     push        hl
-    ld          hl,0x23d8
+    ; ld          hl,0x23d8
+    ld hl,DFORMA
     jr          BRWR0
 BREADA
     ld          a,(WORKDR)
@@ -5802,18 +5806,18 @@ ADD_LBA_OFF
 DREADSD
     push ix
     push hl
-
+    ld a,(WORKDR)
     call GETIMGSTAT
     bit 0,(hl)
     jr z,DREADSD_NR
 
     push hl ; hl=DIMAGESTAT
 
-    call FYZLOG
+    ; call FYZLOG
     ; hl = logsector
-    pop de
-    ex de,hl
-/*
+    ; pop de
+    ; ex de,hl
+
     ld l,b
     ld h,0
     push hl
@@ -5828,7 +5832,7 @@ DREADSD
     pop de
     ex de,hl    ; hl = DIMAGESTAT
                 ; de = MDOS logical sector
-*/
+
     call ADD_LBA_OFF
             ; hlde=sektor
     pop ix  ; ix = addr to read
@@ -5902,6 +5906,7 @@ DWRITESD
     push ix
     push hl
     
+    ld a,(WORKDR)
     call GETIMGSTAT
     bit 0,(hl)
     jr z,DWRITESD_NR
