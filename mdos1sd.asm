@@ -5484,7 +5484,7 @@ TESTDR
     ; CALL DRVSEL
     push hl
     call GETIMGSTAT
-    bit 0,(hl)      ; disk image mounted?
+    bit 6,(hl)      ; disk image mounted?
     jr nz,TESTDR_RET
     xor a           ; pokud neni namountovan image
     ld (ix+0x30),a  ; nastav neaktivni
@@ -5732,7 +5732,7 @@ LFNDNULL
 
 ; disk image params
 ; 0:drive status
-;   bit 0:  1 = mounted
+;   bit 6:  1 = mounted
 ;   bit 7:  1 = READONLY
 ; 1,2,3,4 LBA start - mel by pak byt spis prvni cluster souboru
 
@@ -5825,7 +5825,7 @@ DREADSD
     push hl
     ld a,(WORKDR)
     call GETIMGSTAT
-    bit 0,(hl)
+    bit 6,(hl)
     jr z,DREADSD_NR
 
     push hl ; hl=DIMAGESTAT
@@ -5899,7 +5899,7 @@ DWRITESD
     
     ld a,(WORKDR)
     call GETIMGSTAT
-    bit 0,(hl)
+    bit 6,(hl)
     jr z,DWRITESD_NR
     bit 7,(hl)
     jr nz,DWRITESD_WP

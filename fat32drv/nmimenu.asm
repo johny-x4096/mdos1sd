@@ -1138,7 +1138,7 @@ browser_action
     ldir
 
     call get_drvstat
-    ld a,1
+    ld a,64
     ; ld (DIMAGESTAT),a
     ld (hl),a
     inc hl
