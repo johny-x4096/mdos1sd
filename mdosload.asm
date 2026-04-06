@@ -1,6 +1,6 @@
     DEVICE zxspectrum48
     org 32768
-SPLASHSCR   equ 0
+SPLASHSCR   equ 1
 DIVPORT equ 227
 CONMEM  equ 128
 MAPRAM  equ 64
@@ -33,6 +33,21 @@ start
     ld bc,msg_len
     call 0x203c
 
+    ld hl,18432
+    ld de,logo
+    ld bc,64
+1
+    push bc
+    push hl
+    ld bc,32
+    ldir
+    pop hl
+    pop bc
+    call downhl
+    djnz 1b
+
+
+    
     call waitkey
     ENDIF
 
@@ -66,10 +81,126 @@ start
 
     IF SPLASHSCR
 waitkey
+    call fx
+    ; call logocp
+
     halt
     ld a,(23556)
     cp 255
     jr z,waitkey
+    ret
+
+fx
+    ld hl,(var2)
+    inc hl
+    ld (var2),hl
+    push iy
+    call fx0
+    and 31
+    ld d,a
+    call fx0
+    ld e,a
+    push de
+    pop iy
+    ld ix,logo
+    ld c,0
+    ld hl,18432
+
+
+    ld e,l
+    ld d,h
+1
+    push hl
+    ld b,32
+
+2
+    xor (iy+0)
+    or (iy+1)
+    and (hl)
+    or (ix+0)
+    ld (de),a
+    inc l
+    inc e
+    inc iy
+    inc ix
+    djnz 2b
+    pop hl
+    ld e,l
+    ld d,h
+    call downhl
+    inc c
+    ld a,c
+    cp 57
+
+    jr nz,1b
+    pop iy
+    ret
+
+fx0
+    push de
+    push hl
+    ld a,r
+    ld l,a
+    ld a,(var1)
+    add l
+    xor 7
+    rlca
+    add a,31
+    ld (var1),a
+    ld hl,(var2)
+    ld de,29711
+    add hl,de
+    rlc l
+    ld (var2),hl
+    xor l
+    xor h
+    pop hl
+    pop de
+    ret
+
+fx1
+var1
+    db 0
+var2
+    dw 0
+
+logocp
+    ld de,logo
+    ld hl,18432
+    ld b,64
+1
+    push bc
+    push hl
+    ld b,32
+2
+    ld a,(de)
+    or (hl)
+    ld (hl),a
+    inc hl
+    inc de
+    djnz 2b
+    pop hl
+    pop bc
+    call downhl
+    djnz 1b
+    ret
+
+downhl
+    inc h
+    ld a,h
+    and 7
+    ret nz
+    ld a,l
+    add a,32
+    ld l,a
+    ld a,h
+    jr c,downhl2
+    sub 8
+    ld h,a
+downhl2
+    cp 88
+    ret c
+    ld h,64
     ret
 
 message
@@ -84,6 +215,7 @@ mdosrom
     incbin "mdos1sd.bin"
 mdosmenu
     incbin "mdosmenu.nmi"
+    ALIGN 256
 logo
     incbin "logo/logo.scr",2048,2048
     ; incbin "mdos3sd.bin"
