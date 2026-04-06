@@ -840,19 +840,26 @@ read_continue
     pop ix
     ret
 
-
+SD_IDLE
+	ld b,16
+	ld a,0ffh
+1
+	out (SPI_PORT),a
+	djnz 1b
+    ret
 
 SD_READ:
 	; hlde = sector
 	; ix = to address
-	ld b,16
-	ld a,0ffh
-sdrdl1:
-	out (SPI_PORT),a
-	djnz sdrdl1
+; 	ld b,16
+; 	ld a,0ffh
+; sdrdl1:
+; 	out (SPI_PORT),a
+; 	djnz sdrdl1
+    call SD_IDLE
 ;----
     ; ld a,(card_select)
-    ld a,SD_1
+    ld a,SD_0
 	out (OUT_PORT),a
 ;----
 	; hlde = sector
@@ -886,13 +893,13 @@ sdrdl1:
 	out (OUT_PORT),a
 ;----
 
-	ld b,16
-	ld a,0ffh
-sdrdl2
-	; in a,(SPI_PORT)
-	out (SPI_PORT),a
-	djnz sdrdl2
-
+; 	ld b,16
+; 	ld a,0ffh
+; sdrdl2
+; 	; in a,(SPI_PORT)
+; 	out (SPI_PORT),a
+; 	djnz sdrdl2
+    call SD_IDLE
     ld a,e  ; restore R1
     ret
 
@@ -900,14 +907,15 @@ SD_WRITE:
 	; hlde = sector
 	; ix = from address
 
-	ld b,16
-	ld a,0ffh
-sdwr1:
-	; in a,(SPI_PORT)
-	out (SPI_PORT),a
-	djnz sdwr1
+; 	ld b,16
+; 	ld a,0ffh
+; sdwr1:
+; 	; in a,(SPI_PORT)
+; 	out (SPI_PORT),a
+; 	djnz sdwr1
+    call SD_IDLE
 ;----
-    ld a,SD_1
+    ld a,SD_0
 	out (OUT_PORT),a
 ;----	
 	ld a,CMD_24
@@ -946,12 +954,13 @@ wbsy:
 	out (OUT_PORT),a
 ;----
 
-	ld b,16
-	ld a,0ffh
-sdwr2:
-	; in a,(SPI_PORT)
-	out (SPI_PORT),a
-	djnz sdwr2
+; 	ld b,16
+; 	ld a,0ffh
+; sdwr2:
+; 	; in a,(SPI_PORT)
+; 	out (SPI_PORT),a
+; 	djnz sdwr2
+    call SD_IDLE
 
 	ld a,e
 	and 01fh
