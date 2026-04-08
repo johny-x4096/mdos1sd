@@ -1170,7 +1170,7 @@ RINFO6
     ld          b,h
     call        BCPRT
     ld          a,0x8
-    ld          de,0x971
+    ld          de,INFMES
     call        PRTMES
     ld          bc,(RAMTOP)
     call        BCPRT
@@ -1188,27 +1188,27 @@ RINFO6
     ld          a,0xd
     RST         RST10
     ret
-; INFMES
-;     db 80h
-;     db "MDOS Release: 1.0 (01-Sep-92)\r"
-;     db "(C) Didaktik Skalica 1992",0Dh,08Dh
-;     db "Drives Defined  :"," "+080h
-;     db ":,"," "+80h
-;     db 8,8,32,0Dh
-;     db "Drives Installed:",0A0h
-;     db 8,8,32,0Dh
-;     db "Current Device  :",0A0h
-;     db ":",0Dh,0Dh
-;     db "Volumes Available:",08Dh
-;     db 0Dh
-;     db "Length of Program  :",0A0h
-;     db 0Dh
-;     db "Length of Variables:",0A0h
-;     db 0Dh,0Dh
-;     db "Top of RAM :",0A0h
-;     db 0Dh
-;     db          "Free memory:",0A0h
-    ORG 0x0A4B
+; 0x971
+INFMES
+    db 80h
+    db "MDOS Release: 1.0 (01-Sep-92)\r"
+    db "(C) Didaktik Skalica 1992",0Dh,08Dh
+    db "Drives Defined  :"," "+080h
+    db ":,"," "+80h
+    db 8,8,32,0Dh
+    db "Drives Installed:",0A0h
+    db 8,8,32,0Dh
+    db "Current Device  :",0A0h
+    db ":",0Dh,0Dh
+    db "Volumes Available:",08Dh
+    db 0Dh
+    db "Length of Program  :",0A0h
+    db 0Dh
+    db "Length of Variables:",0A0h
+    db 0Dh,0Dh
+    db "Top of RAM :",0A0h
+    db 0Dh
+    db          "Free memory:",0A0h
 RESTORE
     ; ld          hl,0x2296
     ld hl,BWRITE
@@ -5646,29 +5646,7 @@ SYSMSG
     db          "All data will be discarded !  ",0A0h
     db          "File too lon",0E7h
 
-INFMES
-    db 80h
-    db "MDOS Release: 1.0 (01-Sep-92)\r"
-    db "(C) Didaktik Skalica 1992",0Dh
-    db "SD version by Johny-X & Flyyn 2026",0Dh
-    db "build ",__TIME__,"/",__DATE__,0Dh,08Dh
-    
-    db "Drives Defined  :"," "+080h
-    db ":,"," "+80h
-    db 8,8,32,0Dh
-    db "Drives Installed:",0A0h
-    db 8,8,32,0Dh
-    db "Current Device  :",0A0h
-    db ":",0Dh,0Dh
-    db "Volumes Available:",08Dh
-    db 0Dh
-    db "Length of Program  :",0A0h
-    db 0Dh
-    db "Length of Variables:",0A0h
-    db 0Dh,0Dh
-    db "Top of RAM :",0A0h
-    db 0Dh
-    db          "Free memory:",0A0h
+
 
 LOAFND_      ; 0x1FA5
     push        hl
@@ -5776,7 +5754,7 @@ DIMAGESTAT
     ; db 0
     ; db 0,0,0,0
 SDDRVB
-    db SD_1
+    db SD_0
 SDDRIVEBYTES
     db SD_0
     db SD_1
@@ -5881,12 +5859,15 @@ DREADSD
 SD_READ:
 	; hlde = sector
 	; ix = to address
-    call SDIDLE
+    ; call SDIDLE
 ;----
     ; ld a,(card_select)
     ; ld a,SD_1
     ld a,(SDDRVB)
 	out (OUT_PORT),a
+
+	ld a,0xff
+	out (SPI_PORT),a
 ;----
 	; hlde = sector
 	ld a,CMD_17
@@ -5917,9 +5898,10 @@ SD_READ:
 ;----
 	ld a,255
 	out (OUT_PORT),a
+    out (SPI_PORT),a
 ;----
 
-    call SDIDLE
+    ; call SDIDLE
     ld a,e  ; restore R1
 
 
@@ -5958,11 +5940,13 @@ SD_WRITE:
 	; hlde = sector
 	; ix = from address
 
-    call SDIDLE
+    ; call SDIDLE
 ;----
     ; ld a,SD_1
     ld a,(SDDRVB)
 	out (OUT_PORT),a
+	ld a,0xff
+	out (SPI_PORT),a
 ;----	
 	ld a,CMD_24
 	call SD_SENDCMD
@@ -5998,9 +5982,10 @@ wbsy:
 ;----
 	ld a,255
 	out (OUT_PORT),a
+    out (SPI_PORT),a
 ;----
 
-    call SDIDLE
+    ; call SDIDLE
 
 	ld a,e
 	and 01fh
@@ -6020,13 +6005,13 @@ DWSDERREX
     pop hl
     jr DWRITESD_ERR
 
-SDIDLE
-	ld b,16
-	ld a,0ffh
-sdidl1
-	out (SPI_PORT),a
-	djnz sdidl1
-    ret
+; SDIDLE
+; 	ld b,16
+; 	ld a,0ffh
+; sdidl1
+; 	out (SPI_PORT),a
+; 	djnz sdidl1
+;     ret
 
 SD_SENDCMD:
 	ld c,SPI_PORT
@@ -6036,7 +6021,8 @@ SD_SENDCMD:
 	out (c),d
 	out (c),e
 
-	xor a
+	; xor a
+    ld a,0xff
 	out	(c),a 
 
 WAIT:
@@ -6050,6 +6036,7 @@ wloop:
 	ld a,b
 	or c
 	jr nz,wloop
+    ld a,0xff
     ; djnz wloop
 	ret
 
@@ -6065,7 +6052,9 @@ wdata_loop:
 	or c
 	jr nz,wdata_loop
     ; djnz wdata_loop
-	jr WAIT_DATA
+	; jr WAIT_DATA
+    ld a,0xff
+
 	ret
 
     ORG 0x3800

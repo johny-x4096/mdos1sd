@@ -154,6 +154,21 @@ fat_byte   = fat_offset & 0x1FF
 
 ; direntry
 ;     ds 32
+; a>volume number 0-7
+; ix<volume vars
+VOLUME_SELECT
+    ld l,a
+    ld h,0
+    add hl,hl   ;*2
+    add hl,hl   ;*4
+    add hl,hl   ;*8
+    add hl,hl   ;*16
+    add hl,hl   ;*32
+    ld de,VOLUMES
+    add hl,de
+    push hl
+    pop ix
+    ret
 
 VOLUME_INIT
     ; set "actual sector in buffer" to non-existent
@@ -848,6 +863,8 @@ SD_IDLE
 	djnz 1b
     ret
 
+; SD_ON
+
 SD_READ:
 	; hlde = sector
 	; ix = to address
@@ -856,11 +873,13 @@ SD_READ:
 ; sdrdl1:
 ; 	out (SPI_PORT),a
 ; 	djnz sdrdl1
-    call SD_IDLE
+    ; call SD_IDLE
 ;----
     ; ld a,(card_select)
     ld a,SD_0
 	out (OUT_PORT),a
+	ld a,0xff
+	out (SPI_PORT),a
 ;----
 	; hlde = sector
 	ld a,CMD_17
@@ -891,6 +910,7 @@ SD_READ:
 ;----
 	ld a,255
 	out (OUT_PORT),a
+    out (SPI_PORT),a
 ;----
 
 ; 	ld b,16
@@ -899,7 +919,7 @@ SD_READ:
 ; 	; in a,(SPI_PORT)
 ; 	out (SPI_PORT),a
 ; 	djnz sdrdl2
-    call SD_IDLE
+    ; call SD_IDLE
     ld a,e  ; restore R1
     ret
 
@@ -913,10 +933,12 @@ SD_WRITE:
 ; 	; in a,(SPI_PORT)
 ; 	out (SPI_PORT),a
 ; 	djnz sdwr1
-    call SD_IDLE
+    ; call SD_IDLE
 ;----
     ld a,SD_0
 	out (OUT_PORT),a
+	ld a,0xff
+	out (SPI_PORT),a
 ;----	
 	ld a,CMD_24
 	call SD_SENDCMD
@@ -952,6 +974,7 @@ wbsy:
 ;----
 	ld a,255
 	out (OUT_PORT),a
+    out (SPI_PORT),a
 ;----
 
 ; 	ld b,16
@@ -960,7 +983,7 @@ wbsy:
 ; 	; in a,(SPI_PORT)
 ; 	out (SPI_PORT),a
 ; 	djnz sdwr2
-    call SD_IDLE
+    ; call SD_IDLE
 
 	ld a,e
 	and 01fh
@@ -975,7 +998,8 @@ SD_SENDCMD:
 	out (c),d
 	out (c),e
 
-	xor a
+	; xor a
+    ld a,0xff
 	out	(c),a 
 
 WAIT:
@@ -990,6 +1014,7 @@ wloop:
 	or c
 	jr nz,wloop
     ; djnz wloop
+    ld a,0xff
 	ret
 
 WAIT_DATA:
@@ -1004,7 +1029,8 @@ wdata_loop:
 	or c
 	jr nz,wdata_loop
     ; djnz wdata_loop
-	jr WAIT_DATA
+	; jr WAIT_DATA
+    ld a,0xff
 	ret
 
 tmp32_1
@@ -1022,8 +1048,10 @@ tmp32_1
 ;     dw 0x103c,0x0000  ; first cluster
 ;     dw 0x103c,0x0000  ; actual cluster
 ;     dw 0,0  ; cluster index in file
+VOLUMES
 volume1
-    ds 32
+    ds 32*8
+
 buff1
     ds 512
 
