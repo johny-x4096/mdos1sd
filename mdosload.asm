@@ -50,7 +50,6 @@ start
     
     call waitkey
     ENDIF
-
     di
     ld a,CONMEM+MAPRAM  ; reset MAPRAM
     out (DIVPORT),a
@@ -75,8 +74,8 @@ start
     ldir
     ld a,MAPRAM
     out (DIVPORT),a
-    ei
-    ret
+    ; ei
+    ; ret
     rst 0
 
     IF SPLASHSCR
