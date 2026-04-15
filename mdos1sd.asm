@@ -315,8 +315,7 @@ SPECCOMM
     pop         bc
     ex          (sp),hl
     ei
-    ; nop
-    out         (DAT_io_00fe),a
+    out         (0xfe),a
     ld          c,l
     ld          b,h
     call        BCPRT
@@ -2623,7 +2622,7 @@ FORMTEST2
     ld          hl,0x4900
     ld          de,0x1
     ld          a,c
-    out         (DAT_io_00fe),a
+    out         (0xfe),a
     ld          a,(WORKDR)
     call        DREAD
     ld          a,0x2
@@ -2782,7 +2781,7 @@ WFATEND
     rrca
     rrca
     or          0xf8
-    out         (DAT_io_00fe),a
+    out         (0xfe),a
     ret
 TXTFORM
     db          0FFh
@@ -4964,7 +4963,9 @@ HWINI0
     push        af
     call        DRVSEL
     call        HOME
-    out         (0x87),a
+    ; out         (0x87),a
+    nop
+    nop
     and         0x4
     ; jr          z,HWINI1
     nop
@@ -5266,8 +5267,10 @@ FSECOLOR
     dec         c
     jr          nz,FSECOLOR
     ld hl,VRAM
-    in          a,(DAT_io_0083)
-    out         (DAT_io_00fe),a
+    ; in          a,(DAT_io_0083)
+    nop
+    nop
+    out         (0xfe),a
     and         0x1
     rlca
     rlca
@@ -5287,7 +5290,9 @@ MKFDATA
     ld          a,0xfe
     ld (hl),a
     inc         hl
-    in          a,(DAT_io_0083)
+    ; in          a,(DAT_io_0083)
+    nop
+    nop
     ld (hl),a
     inc         hl
     ld          a,(SVSIDE)
@@ -5375,7 +5380,9 @@ FINDTRRD
     pop         bc
     inc         c
     ld          a,c
-    out         (DAT_io_0085),a
+    ; out         (DAT_io_0085),a
+    nop
+    nop
     xor         a
     bit         0x4,(ix+0x1)
     jr          z,FINDTRSVS
@@ -5388,13 +5395,19 @@ FINDTRSVS
     jr          z,NOD40IN80
     ld          d,0x18
     sla         b
-    in          a,(DAT_io_0083)
+    ; in          a,(DAT_io_0083)
+    nop
+    nop
     add         a,a
-    out         (DAT_io_0083),a
+    ; out         (DAT_io_0083),a
+    nop
+    nop
 NOD40IN80
     bit         0x7,(ix+0x0)
     jr          z,FNDTRNOC
-    in          a,(DAT_io_0083)
+    ; in          a,(DAT_io_0083)
+    nop
+    nop
     cp          b
     jr          z,FINDTROK
 FNDTRNOC
@@ -5417,9 +5430,13 @@ FNDTRNOC
 FINDTROK
     bit         0x5,(ix+0x1)
     jr          z,NOD40IN801
-    in          a,(DAT_io_0083)
+    ; in          a,(DAT_io_0083)
+    nop
+    nop
     rrca
-    out         (DAT_io_0083),a
+    ; out         (DAT_io_0083),a
+    nop
+    nop
 NOD40IN801
     di
     ld          (DOSIX2),ix
@@ -5435,7 +5452,9 @@ FORFINDTR
     jp          FINDTRACK1
 DISKRET
     ld          ix,(DOSIX2)
-    in          a,(DAT_io_0083)
+    ; in          a,(DAT_io_0083)
+    nop
+    nop
     ld          (ix+0x4),a
     xor         a
     ld          (INTCNT),a
@@ -5471,7 +5490,9 @@ DRVSELOUT
     or          c
     call        OUTTODR
     ld          a,(ix+0x4)
-    out         (DAT_io_0083),a
+    ; out         (DAT_io_0083),a
+    nop
+    nop
     pop         hl
     pop         bc
     pop         af
@@ -5535,11 +5556,15 @@ TESTDR_RET
 ;     ret
     ORG 0x25BC
 OUTTODR
-    out         (DAT_io_0089),a
+    ; out         (DAT_io_0089),a
+    nop
+    nop
     ld          (SELSTA1),a
     ret
 TESTDRQ
-    in          a,(DAT_io_0081)
+    ; in          a,(DAT_io_0081)
+    nop
+    nop
     and         0x2
     ret
 DELAY
@@ -6127,12 +6152,12 @@ SNAP_SP equ 0x3ffe
 ;------------------------------------------------------------------------------
 
 ; IO
-DAT_io_0081 equ 081h
-DAT_io_0083 equ 083h
-DAT_io_0085 equ 085h
-DAT_io_0087 equ 087h
-DAT_io_0089 equ 089h
-DAT_io_00fe equ 0xfe
+; DAT_io_0081 equ 081h
+; DAT_io_0083 equ 083h
+; DAT_io_0085 equ 085h
+; DAT_io_0087 equ 087h
+; DAT_io_0089 equ 089h
+; DAT_io_00fe equ 0xfe
 VRAM    equ 0x4000
 VRAM_ATTR   equ 0x5800
 ; ZX BASIC VARS
