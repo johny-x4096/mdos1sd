@@ -999,8 +999,15 @@ br_select_up
     ld a,(win_select_pos)
 
 br_select_down
-    ; ld a,(win_select_pos)
-    ; inc a
+    ld a,(win_select_pos)
+    inc a
+    ld hl,win_items_cnt
+    cp (hl)
+    jr nz,1f
+    cp max_files_per_page
+    jr z,br_pg_next
+    ret
+
     ; ld c,a
     ; ld a,(win_items_cnt)
     ; cp max_files_per_page
@@ -1010,22 +1017,23 @@ br_select_down
 
     ; ret
 ; 1
-
+1
+    push af
     call w_hide_select
-
-    ld a,(win_select_pos)
-    inc a
+    pop af
+    ; ld a,(win_select_pos)
+    ; inc a
     ; ld hl,win_browser+3
-    ld hl,win_items_cnt
-    cp (hl)
-    jr z,br_pg_next
+    ; ld hl,win_items_cnt
+    ; cp (hl)
+    ; jr z,br_pg_next
 
 
 ; pokud aktualni pozice == pocet polozek &&
 ; pocet polozek == max_polozek_menu
 ; next pg
 
-1
+; 1
     ld (win_select_pos),a
     jp w_draw_select
 
@@ -1317,7 +1325,7 @@ fpage
 act_mdos_drv
     db 0
 act_sd_drv
-    db 1
+    db 0
 fentryes
     ds 4*max_files_per_page ; dir pos
 browser_pages
