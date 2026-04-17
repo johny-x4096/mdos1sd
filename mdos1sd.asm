@@ -2,7 +2,7 @@
 DIVPORT equ 227
 CONMEM  equ 128
 MAPRAM  equ 64
-
+BANK128 equ 32765
     ORG 0
 RST00
     nop
@@ -155,6 +155,14 @@ TESTROUT
     ex          (sp),hl
     ret
 COLD
+    ; set divxxx bank to 0
+    ld a,0
+    out (DIVPORT),a
+    ; set 48k rom in 128k machine
+    ld a,16
+    ld bc,BANK128
+    out (c),a
+    ; out (BANK128),a
 ; d80 sram test
 ;     ld          hl,0x0
 ;     ld          de,0x3800
