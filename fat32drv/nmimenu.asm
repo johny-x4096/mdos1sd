@@ -1,6 +1,6 @@
     DEVICE ZXSPECTRUM48
-    ; ORG 32768
-    org 8192
+    ORG 32768
+    ; org 8192
 start
     jp nmimenu
 
@@ -72,23 +72,25 @@ filter_entry
     ld b,3
     ld hl,direntry+8
     ld de,suffix1
-    call cp_hlde_b
+    ; call cp_hlde_b
+    call CP_HLDE_B
     ret z
     ld b,3
     ld hl,direntry+8
     ld de,suffix2
-    jr cp_hlde_b
-    ; ret
-
-cp_hlde_b
-    ld a,(de)
-    cp (hl)
-    ret nz
-    inc de
-    inc hl
-    djnz cp_hlde_b
-    xor a
+    call CP_HLDE_B
+    ; jr cp_hlde_b
     ret
+
+; cp_hlde_b
+;     ld a,(de)
+;     cp (hl)
+;     ret nz
+;     inc de
+;     inc hl
+;     djnz cp_hlde_b
+;     xor a
+;     ret
 
 keytest
     ; up 7
@@ -96,7 +98,7 @@ keytest
     ld a,251
     in a,(254)
     bit 0,a
-    jr z,keytest_exit
+    jp z,keytest_exit
     ld a,239
     in a,(254)
     bit 3,a
@@ -153,8 +155,14 @@ keytest
     ld c,'e'
     bit 2,a
     jr z,keytest_exit
-    ; s
-    
+
+    ; d
+    ld c,'v'
+    ld a,253
+    in a,(254)
+    bit 2,a
+    jr z,keytest_exit
+
     ; break
     ;   caps
     ld c,27
@@ -167,6 +175,9 @@ keytest
     in a,(254)
     bit 0,a
     jr z,keytest_exit
+
+
+
 nokey
     ld c,0
 keytest_exit
@@ -599,7 +610,7 @@ main_init
     call w_set_act
     call w_draw
     call w_title
-    db "MDOS1SD v0.1",13,0
+    db "MDOS1SD v0.2",13,0
 
     ld a,0
     ld (win_select_pos),a
@@ -809,8 +820,29 @@ main_select_actions
     dw return
 
 browser_init
+/*
+    ld de,0
+    ld hl,0
+    ld ix,buff1
+    call SD_READ
+    ld de,(buff1+MBR_Partition1+PT_LbaOfs)
+    ld hl,(buff1+MBR_Partition1+PT_LbaOfs+2)
+    ; ld ix,volume1
+
     ld ix,volume1
     call VOLUME_INIT
+*/
+    ld a,(drive_act)
+    call DRIVE_SELECT
+    ld a,(volume_act)
+    ld ix,volume1
+    ld e,0xff
+    ld (ix+V_SEC_ACT+0),e
+    ld (ix+V_SEC_ACT+1),e
+    ld (ix+V_SEC_ACT+2),e
+    ld (ix+V_SEC_ACT+3),e
+    call VOLUME_SELECT
+
     ld iy,testfp
     ; ld de,0x196
     ld de,0
@@ -946,6 +978,10 @@ bd_next_pg
     ld (hl),d
 bd_end
     ei
+    ; todo: nefunguje spravne u prazdneho volume
+    ld a,(direntry)
+    cp 0
+    jr z,1f
     ld a,(win_items_cnt)
     cp 0
     jp z,br_pg_prev
@@ -970,6 +1006,9 @@ browser_select
     jp z,br_pg_prev
     cp 'r'
     jp z,br_pg_next
+    cp 'v'
+    ld hl,drives_init
+    jp z,set_state
     cp 27
     jr z,br_exit
     cp 13
@@ -1176,7 +1215,8 @@ browser_action
     ldir
 
     call get_drvstat
-    ld a,(act_sd_drv)
+    ; ld a,(act_sd_drv)
+    ld a,(drive_act)
     set 6,a
     ; ld a,64
     ; ld (DIMAGESTAT),a
@@ -1209,7 +1249,156 @@ browser_action
 
 
 
+drives_init
+    ld hl,win_drives
+    call w_set_act
+    call w_draw
+    call w_title
+    db "Probing drives",13,0
 
+    ld a,0
+    ld (win_select_pos),a
+    ld (win_items_cnt),a
+    ld hl,drives_draw
+    jp set_state
+
+drives_draw
+    ld ix,volume_tmp
+    ld a,0
+    ld (drive_act),a
+    ld (volumes_cnt),a
+print_drv
+    ld a,(drive_act)
+    call DRIVE_SELECT
+    ld a,0
+    ld (volume_act),a
+print_part
+    ld a,(volume_act)
+    ; reset sector buffer
+    ld e,0xff
+    ld (ix+V_SEC_ACT+0),e
+    ld (ix+V_SEC_ACT+1),e
+    ld (ix+V_SEC_ACT+2),e
+    ld (ix+V_SEC_ACT+3),e
+
+    call VOLUME_SELECT
+    cp 0xff
+    jr z,1f
+
+    call w_print_i
+    db "SD",0
+    ld a,(drive_act)
+    add a,'0'
+    call w_charout
+    ld a,','
+    call w_charout
+    ld a,(volume_act)
+    add a,'0'
+    call w_charout
+    ld a,'/'
+    call w_charout
+
+    ld iy,tmpfp
+    ld de,2
+    ld hl,0
+    ld (iy+F_FCLUSTER+0),e
+    ld (iy+F_FCLUSTER+1),d
+    ld (iy+F_FCLUSTER+2),l
+    ld (iy+F_FCLUSTER+3),h
+    call REWIND
+    ld de,direntry
+    call GET_DIR_ENTRY
+    ld hl,direntry
+    ld b,11
+    call w_print_b
+    ld a,13
+    call w_charout
+
+    ld hl,volumes_cnt
+    ld a,(hl)
+    inc (hl)
+    ld l,a
+    ld h,0
+    add hl,hl
+    ld de,volumes
+    add hl,de
+    ld a,(drive_act)
+    ld (hl),a
+    inc hl
+    ld a,(volume_act)
+    ld (hl),a
+1
+    ld a,(volume_act)
+    inc a
+    ld (volume_act),a
+    cp 5
+    jp nz,print_part
+
+
+    ld a,(drive_act)
+    inc a
+    ld (drive_act),a
+    cp 2
+    jp nz,print_drv
+
+    ld a,(volumes_cnt)
+    ld (win_items_cnt),a
+
+    call w_draw_select
+    call w_title
+    db "Select volume ",13,0
+    ld hl,drives_select
+    jp set_state
+
+drives_select
+    cp 0
+    ret z
+    cp 'u'
+    jp z,w_select_up
+    cp 'd'
+    jp z,w_select_down
+
+    ld hl,browser_init
+    cp 27
+    ; jp z,return
+    jp z,set_state
+    cp 13
+    ret nz
+    ld hl,drives_action
+    jp set_state
+
+drives_action
+    ld a,(win_select_pos)
+    ld l,a
+    ld h,0
+    add hl,hl
+    ld de,volumes
+    add hl,de
+    ld a,(hl)
+    ld (drive_act),a
+    inc hl
+    ld a,(hl)
+    ld (volume_act),a
+    ; ; todo: nastavit drive no pro nmimenu
+    ; call DRIVE_SELECT
+    ; pop hl
+    ; inc hl
+    ; ld a,(hl)
+    ; ld ix,volume1
+    ; call VOLUME_SELECT
+    ld hl,browser_init
+    jp set_state
+
+; drive number,volume number
+drive_act
+    db 0
+volume_act
+    db 1
+
+volumes
+    ds 8*2
+volumes_cnt
+    db 0
 
     include "fat32drv/fat32drv.asm"
 
@@ -1296,6 +1485,13 @@ testfp
     dw 2,0  ; first cluster
     dw 2,0  ; actual cluster
     dw 0,0  ; cluster index in file
+tmpfp
+    dw 0,0
+    dw 0,0
+    dw 2,0
+    dw 0,0
+    dw 0,0
+
 ; testfpx
 ;     dw 0,0  ; fpos
 ;     dw 0,0  ; size
@@ -1324,8 +1520,8 @@ fpage
     db 0
 act_mdos_drv
     db 0
-act_sd_drv
-    db 0
+; act_sd_drv
+;     db 0
 fentryes
     ds 4*max_files_per_page ; dir pos
 browser_pages
@@ -1374,7 +1570,13 @@ win_browser
 win_eject
     db 4,4,2,16
 
+win_drives
+    db 6,7,18,8
 
+volume_tmp
+    ds 32
+; 12345678901234567
+; sd0,0/12345678901
 end
     DISPLAY "Length:",/A,end-start
     SAVETAP "nmimenu.tap",start

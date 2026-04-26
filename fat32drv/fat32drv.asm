@@ -1,13 +1,30 @@
     ; DEVICE zxspectrum48
     ; org 32768
+WAIT_DATA_TIMEOUT   equ 512
+WAIT_CMD_TIMEOUT    equ 512
 DIVPORT equ 227
 CONMEM  equ 128
 MAPRAM  equ 64
 SPI_PORT	equ 0ebh
 OUT_PORT	equ 0e7h	; port for CS control (D1:D0)
-CMD_17      equ	040h+17	; READ_SINGLE_BLOCK
-CMD_24      equ 040h+24	; WRITE_BLOCK
-
+; CMD_17      equ	040h+17	; READ_SINGLE_BLOCK
+; CMD_24      equ 040h+24	; WRITE_BLOCK
+CMD_0		equ	0x40	; Go idle state
+CMD_1		equ	0x40+1	; SEND_OP_COND
+CMD_8		equ 0x40+8	; SEND_IF_COND
+CMD_9		equ 0x40+9	; SEND_CSD
+CMD_10		equ	0x40+10	; SEND_CID
+CMD_12		equ 0x40+12	; STOP_TRANSMISSION
+CMD_16		equ	0x40+16	; SET_BLOCKLEN
+CMD_17		equ	0x40+17	; READ_SINGLE_BLOCK
+CMD_18		equ	0x40+18	; READ_MULTIPLE_BLOCK
+;CMD_23		equ 0x40+23	; SET_BLOCK_COUNT (MMC ONLY)
+ACMD23		equ 0x40+23	; SET_WR_BLOCK_ERASE_COUNT
+CMD_24		equ 0x40+24	; WRITE_BLOCK
+CMD_25		equ 0x40+25	; WRITE_MULTIPLE_BLOCK
+ACMD41		equ 0x40+41	; APP_SEND_OP_COND
+CMD_55		equ 0x40+55	; APP_CMD
+CMD_58		equ 0x40+58	; READ_OCR
 SD_0		equ 0FEh    ; D0 LOW = SLOT0 active;
 ; 11111110b
 SD_1		equ 0FDh    ; D1 LOW = SLOT1 active;
@@ -26,6 +43,8 @@ BPB_FSInfo      equ 48  ; 4B Sector of FSInfo structure in offset from top of th
 BS_BootSig      equ 66  ; 1B Extended boot signature (0x29). This is a signature byte indicates that the following three fields are present.
 BS_VolID        equ 67  ; 4B Volume serial number used with BS_VolLab to track a volume on the removable storage.
 BS_VolLab       equ 71  ; 11B This field is the 11-byte volume label and it matches volume label recorded in the root directory.
+BS_FilSysType   equ 82  ; 8B Always "FAT32   " and it does not have any effect in determination of FAT type.
+; PARTITIONS offsets
 MBR_Partition1  equ 446 ; 16B Partition 1
 MBR_Partition2  equ 462 ; 16B Partition 2
 MBR_Partition3  equ 478 ; 16B Partition 3
@@ -76,16 +95,16 @@ ATTR_LONG_FILE_NAME equ 0x0F ; BITs 0-3 (LFN entry)
 
 
 ; VOLUME vars offset
-; V_START         equ 0   ; 4B Start of volume in sectors (0 for non partitioned, partition start for partitioned)
-V_FATSTART      equ 0   ; 4B Start of fat table in sectors (Absolute from start of disk)
-V_DATASTART     equ 4   ; 4B Start of data area in sectors (Absolute from start of disk)
-V_CLUSTERSIZE   equ 8   ; 1B size of cluster
-V_CLUSTERSH     equ 9   ; 1B shift value for size of cluster
-V_CLUSTERMSK    equ 10  ; 1B cluster mask
-V_ROOTCLUSTER   equ 11  ; 2B first cluster number of root dir
-V_ID            equ 13  ; 4B Volume ID from BS_VolID, to check if volume changed
-V_SEC_ACT       equ 14  ; 4B Actual LBA sector in buffer
-
+V_START         equ 0   ; 4B Start of volume in sectors (0 for non partitioned, partition start for partitioned)
+V_FATSTART      equ 4   ; 4B Start of fat table in sectors (Absolute from start of disk)
+V_DATASTART     equ 8   ; 4B Start of data area in sectors (Absolute from start of disk)
+V_CLUSTERSIZE   equ 12  ; 1B size of cluster
+V_CLUSTERSH     equ 13  ; 1B shift value for size of cluster
+V_CLUSTERMSK    equ 14  ; 1B cluster mask
+V_ROOTCLUSTER   equ 15  ; 2B first cluster number of root dir
+V_ID            equ 17  ; 4B Volume ID from BS_VolID, to check if volume changed
+V_SEC_ACT       equ 21  ; 4B Actual LBA sector in buffer
+V_VARS_LEN      equ 26
 ; FILE vars offset
 F_FPOS          equ 0   ; 4B byte position in stream
 F_SIZE          equ 4   ; 4B file size, 0 for directory
@@ -114,48 +133,132 @@ fat_byte   = fat_offset & 0x1FF
          ORG addr
     ENDM
 
-; start
-;     di
-;     call VOLUME_INIT
-; ; -----
-;     ; ld e,(ix+V_DATASTART+0)
-;     ; ld d,(ix+V_DATASTART+1)
-;     ; ld l,(ix+V_DATASTART+2)
-;     ; ld h,(ix+V_DATASTART+3)
-;     ; push ix
-;     ; ld ix,buff1
-;     ; call SD_READ
-;     ; pop ix
+;a>drive CS byte
+DRIVE_SELECT
+    ld l,a
+    ld h,0
+    ld de,DRV_CSL
+    add hl,de
+    ld a,(hl)
+    ld (CARD_SELECT),a
+    ; todo: vyber drive podle A
+    ; a 0,1 -> ulozi drive CS
+    ; otestuje disk
+    ; vrati jestli je/neni disk
+    ret
 
-; ; ------
-;     ; ld de,0
-;     ; ld hl,0
-;     ; ld bc,buff1
-;     ; call GET_FAT_REC
+DRIVE_INIT
+    call SD_INIT
+    cp 0xff
+    ret z
 
-;     ld iy,testfp
-;     ; call GET_NEXT_CL
-;     ; ld de,2
-;     ; ld hl,0
-;     ; call FIND_CL
+    ret
 
-; loop
-;     ; ld de,16384
-;     ld de,direntry
-;     ; ld bc,512
-;     ld bc,32
-;     call S_READ
-;     cp 0xff
-;     jr z,endloop
-;     ldir
-;     jr loop
-; endloop
-;     halt
+; na aktualnim drive otestuje primary partition 1-4
+; a pokud je typu 0xC zavola VOLUME_INIT
+; ix>volume vars
+; a> partition 1-4
+VOLUME_SELECT
+    ; cp 0    ; todo: detekovat non-partition sd
+    ; jr z,vserr
+    push af
+    ; ; reset sector buffer
+    ; ld a,0xff
+    ; ld (ix+V_SEC_ACT+0),a
+    ; ld (ix+V_SEC_ACT+1),a
+    ; ld (ix+V_SEC_ACT+2),a
+    ; ld (ix+V_SEC_ACT+3),a
+    ; read MBR to buffer
+    ld de,0
+    ld hl,0
+    call READSEC
 
-; direntry
-;     ds 32
+    pop af
+    cp 0    ; todo: detekovat non-partition sd
+    jr nz,1f
+tady
+    ld hl,buff1+BS_FilSysType
+    ld de,fat32sign
+    ld b,5
+    call CP_HLDE_B
+    jr nz,vserr
+    ld de,0
+    ld hl,0
+    jp VOLUME_INIT
+
+    ; jr z,vserr
+1
+    ; get buffer + partition offset
+    dec a
+    ld l,a
+    ld h,0
+    add hl,hl   ; *x
+    ld de,part_offsets
+    add hl,de
+
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    inc hl
+
+    push de
+    inc de
+    inc de
+    inc de
+    inc de
+    ld a,(de)
+    cp 0xC
+    jr nz,vsnot
+    pop hl
+    ; add offset to volume start to partition record
+    ld de,PT_LbaOfs
+    add hl,de
+
+    ld e,(hl)
+    inc hl
+    ld d,(hl)
+    inc hl
+    ld c,(hl)
+    inc hl
+    ld b,(hl)
+    push bc
+    pop hl
+    jp VOLUME_INIT
+
+
+
+vsnot   ; volume_select not 0xc partition
+    pop de
+vserr
+    ld a,0xff
+    ret
+
+part_offsets
+    dw buff1+MBR_Partition1
+    dw buff1+MBR_Partition2
+    dw buff1+MBR_Partition3
+    dw buff1+MBR_Partition4
+fat32sign
+    db "FAT32"
+
+; cp values from hl
+; with values from de
+; count b
+; z=same
+CP_HLDE_B
+    ld a,(de)
+    cp (hl)
+    ret nz
+    inc de
+    inc hl
+    djnz CP_HLDE_B
+    xor a
+    ret
+
+/*
 ; a>volume number 0-7
 ; ix<volume vars
+; set V_SECT_ACT to 0xffffffff
 VOLUME_SELECT
     ld l,a
     ld h,0
@@ -168,8 +271,16 @@ VOLUME_SELECT
     add hl,de
     push hl
     pop ix
+    ld a,0xff
+    ld (ix+V_SEC_ACT+0),a
+    ld (ix+V_SEC_ACT+1),a
+    ld (ix+V_SEC_ACT+2),a
+    ld (ix+V_SEC_ACT+3),a
     ret
+*/
 
+; ix>volume vars
+; hlde>volume start
 VOLUME_INIT
     ; set "actual sector in buffer" to non-existent
     ld a,0xff
@@ -177,21 +288,38 @@ VOLUME_INIT
     ld (ix+V_SEC_ACT+1),a
     ld (ix+V_SEC_ACT+2),a
     ld (ix+V_SEC_ACT+3),a
-    ; read first sector
-    ld de,0
-    ld hl,0
+    ld (ix+V_START+0),e
+    ld (ix+V_START+1),d
+    ld (ix+V_START+2),l
+    ld (ix+V_START+3),h
+    ; read first sector of volume
+    ; ld de,0
+    ; ld hl,0
     call READSEC
     ; TODO: check if FAT volume
-    ld ix,volume1
+    ; ld ix,volume1
 
     ; set FAT start
     ld de,(buff1+BPB_RsvdSecCnt)
     ld hl,0
-    ; TODO: add volume/partition start
-    ld (ix+V_FATSTART+0),e
-    ld (ix+V_FATSTART+1),d
-    ld (ix+V_FATSTART+2),l
-    ld (ix+V_FATSTART+3),h
+    ; add volume/partition start
+    ld a,(ix+V_START+0)
+    add a,e
+    ld (ix+V_FATSTART+0),a
+    ld a,(ix+V_START+1)
+    adc a,d
+    ld (ix+V_FATSTART+1),a
+    ld a,(ix+V_START+2)
+    adc a,l
+    ld (ix+V_FATSTART+2),a
+    ld a,(ix+V_START+3)
+    adc a,h
+    ld (ix+V_FATSTART+3),a
+
+    ; ld (ix+V_FATSTART+0),e
+    ; ld (ix+V_FATSTART+1),d
+    ; ld (ix+V_FATSTART+2),l
+    ; ld (ix+V_FATSTART+3),h
 
     ; set DATA start
     ; get FAT size
@@ -273,6 +401,7 @@ chdir1
 ; iy>file descriptor
 ; de>where to load
 ; a<0 ok, 255 end
+; todo: ^^^ zkontrolovat
 GET_DIR_ENTRY
     ld bc,32
     call S_READ
@@ -855,32 +984,219 @@ read_continue
     pop ix
     ret
 
-SD_IDLE
-	ld b,16
-	ld a,0ffh
+; SD_IDLE
+; 	ld b,16
+; 	ld a,0ffh
+; 1
+; 	out (SPI_PORT),a
+; 	djnz 1b
+;     ret
+
+;--------------------
+SD_INIT
+	; call SD_OFF
+	ld a,0xff
+	out (OUT_PORT),a
+	call SD_POWER_ON
+	ld a,(CARD_SELECT)
+	out (OUT_PORT),a
+
+	call SD_RESET
+    cp 255
+    jr z,SD_ERROR
+	; resp = 1
+    cp 1
+	call SD_SEND_IF_COND
+	; 0 = OK
+	; cp 0
+	; ret nz
+	cp 1
+	jr z,SD_INIT
+	; resp = 0x1AA
+	call SD_OCR
+	ld a,0xff
+	out (OUT_PORT),a
+    xor a   ; no error
+	ret
+
+SD_POWER_ON
+; Set DI and CS high and apply 74 or more clock pulses to SCLK.
+; The card will enter its native operating mode and go ready to accept native command.
+	; send 80clocks
+	; 10x8bits
+	ld b,10
+	; ld bc,0
+	ld a,255
 1
+	; ld a,0xff
 	out (SPI_PORT),a
-	djnz 1b
+	djnz 1B
+	ret
+
+SD_RESET
+    ld b,8
+sd_reset_loop
+    push bc
+	ld a,0xff
+	out (SPI_PORT),a
+	; send CMD_0
+	; param =0,0,0,0
+	; crc = 0x95
+	ld a,CMD_0
+	out (SPI_PORT),a
+	xor a
+	out (SPI_PORT),a
+	out (SPI_PORT),a
+	out (SPI_PORT),a
+	out (SPI_PORT),a
+	ld a,0x95
+	out (SPI_PORT),a
+
+	call WAIT
+    pop bc
+	cp 1
+    ret z
+
+    djnz sd_reset_loop
+    ; jr nz,sd_reset_loop
+
+	; 1 = in idle state, ok
+    ; ret
+
+SD_ERROR
+    ld e,a
+	ld a,0xff
+	out (OUT_PORT),a
+    ld a,e
     ret
 
-; SD_ON
+
+SD_SEND_IF_COND
+	ld a,0xff
+	out (SPI_PORT),a
+	ld a,CMD_8
+	out (SPI_PORT),a
+	xor a
+	out (SPI_PORT),a
+	out (SPI_PORT),a
+	ld a,1
+	out (SPI_PORT),a
+	ld a,0xaa
+	out (SPI_PORT),a
+	; CRC for CMD_8
+	ld a,0x87
+	out (SPI_PORT),a
+
+	call WAIT
+
+	; in a,(SPI_PORT) - from WAIT	; R7 (R1+32bit response)
+	in a,(SPI_PORT)
+	in a,(SPI_PORT)
+	in a,(SPI_PORT)
+	in a,(SPI_PORT)
+	; pokud 0x1AA, V2
+	; posli acmd41
+
+
+
+    ld b,10
+retry_41
+    push bc
+	ld a,0xff
+	out (SPI_PORT),a
+	ld a,CMD_55
+	out (SPI_PORT),a
+	xor a
+	out (SPI_PORT),a
+	out (SPI_PORT),a
+	out (SPI_PORT),a
+	out (SPI_PORT),a
+	; "crc" not needed
+	out (SPI_PORT),a
+
+	call WAIT
+
+	ld a,0xff
+	out (SPI_PORT),a
+
+	; in a,(SPI_PORT)	from wait
+
+	ld a,ACMD41
+	out (SPI_PORT),a
+	ld a,0b01000000	; HCS / bit 30
+	out (SPI_PORT),a
+	xor a
+	out (SPI_PORT),a
+	out (SPI_PORT),a
+	out (SPI_PORT),a
+	; "crc" not needed
+	ld a,1
+	out (SPI_PORT),a
+
+	call WAIT
+
+	; in a,(SPI_PORT)	; from wait
+	; 0 = ok
+	; 1 = still in idle
+    pop bc
+	; cp 1
+    cp 0
+    ret z
+    djnz retry_41
+	; jr z,retry_41
+
+	ret
+
+SD_OCR
+	ld a,CMD_58
+	ld hl,0
+	ld de,0
+	call SD_SENDCMD
+	; a = R1
+	ld e,a
+    in a,(SPI_PORT)
+	in a,(SPI_PORT)
+	in a,(SPI_PORT)
+	in a,(SPI_PORT)
+	; 128 = ready
+        ; test SDXC
+	ld a,e	; a = R1
+	ret
+
+SD_CSD	; get CSD register
+	ld a,CMD_9
+	jr csd_cid_comm
+SD_CID	; get CID register
+	; ix = read to address
+	ld a,CMD_10
+csd_cid_comm	; common for CSD/CID read
+	ld hl,0
+	ld de,0
+	call SD_SENDCMD
+	cp 0
+	ret nz
+    ld e,a  ; store R1
+	call WAIT_DATA
+
+	push ix
+	pop hl
+	ld bc,(256*16)+SPI_PORT ; 16 bytes
+	inir
+    in a,(SPI_PORT)
+	in a,(SPI_PORT)
+    ld a,e  ; restore R1
+	ret
+
+
+;-----------------
 
 SD_READ:
 	; hlde = sector
 	; ix = to address
-; 	ld b,16
-; 	ld a,0ffh
-; sdrdl1:
-; 	out (SPI_PORT),a
-; 	djnz sdrdl1
-    ; call SD_IDLE
-;----
-    ; ld a,(card_select)
-    ld a,SD_0
+    ld a,(CARD_SELECT)
 	out (OUT_PORT),a
 	ld a,0xff
 	out (SPI_PORT),a
-;----
 	; hlde = sector
 	ld a,CMD_17
 	call SD_SENDCMD
@@ -912,84 +1228,8 @@ SD_READ:
 	out (OUT_PORT),a
     out (SPI_PORT),a
 ;----
-
-; 	ld b,16
-; 	ld a,0ffh
-; sdrdl2
-; 	; in a,(SPI_PORT)
-; 	out (SPI_PORT),a
-; 	djnz sdrdl2
-    ; call SD_IDLE
     ld a,e  ; restore R1
     ret
-
-SD_WRITE:
-	; hlde = sector
-	; ix = from address
-
-; 	ld b,16
-; 	ld a,0ffh
-; sdwr1:
-; 	; in a,(SPI_PORT)
-; 	out (SPI_PORT),a
-; 	djnz sdwr1
-    ; call SD_IDLE
-;----
-    ld a,SD_0
-	out (OUT_PORT),a
-	ld a,0xff
-	out (SPI_PORT),a
-;----	
-	ld a,CMD_24
-	call SD_SENDCMD
-	cp 0    ; 0 = ok
-
-	ld a,0FEh	; data start
-	; out (c),a
-	out (SPI_PORT),a
-
-	push ix
-	pop hl
-
-	ld bc,SPI_PORT
-	otir
-	otir
-
-	xor a
-	; 2b crc
-	; out (c),a
-	; out (c),a
-	out (SPI_PORT),a
-	out (SPI_PORT),a
-
-	call WAIT
-	; a = Data response
-	ld e,a
-	
-wbsy:
-	call WAIT
-	cp 0
-	jr z,wbsy
-
-;----
-	ld a,255
-	out (OUT_PORT),a
-    out (SPI_PORT),a
-;----
-
-; 	ld b,16
-; 	ld a,0ffh
-; sdwr2:
-; 	; in a,(SPI_PORT)
-; 	out (SPI_PORT),a
-; 	djnz sdwr2
-    ; call SD_IDLE
-
-	ld a,e
-	and 01fh
-	; a = Data response
-    ret
-
 SD_SENDCMD:
 	ld c,SPI_PORT
 	out (c),a
@@ -1003,8 +1243,7 @@ SD_SENDCMD:
 	out	(c),a 
 
 WAIT:
-    ; ld b,0
-	ld bc,0
+	ld bc,WAIT_CMD_TIMEOUT
 wloop:
 	in a,(SPI_PORT)
 	cp 0FFh
@@ -1019,7 +1258,7 @@ wloop:
 
 WAIT_DATA:
     ; ld b,0
-	ld bc,0
+	ld bc,WAIT_DATA_TIMEOUT
 wdata_loop:
 	in a,(SPI_PORT)
 	cp 0FEh
@@ -1048,10 +1287,15 @@ tmp32_1
 ;     dw 0x103c,0x0000  ; first cluster
 ;     dw 0x103c,0x0000  ; actual cluster
 ;     dw 0,0  ; cluster index in file
+DRV_CSL
+    db SD_0
+    db SD_1
+CARD_SELECT
+    db SD_0
+
 VOLUMES
 volume1
     ds 32*8
-
 buff1
     ds 512
 
