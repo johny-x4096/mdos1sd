@@ -26,12 +26,6 @@ state_loop
     call delay
     jr state_loop
 
-; exit
-;     ; pop iy
-;     pop iy
-;     ld a,0
-;     ret
-
 set_state
     ld (app_state),hl
     ret
@@ -70,25 +64,14 @@ filter_entry
     ld b,3
     ld hl,direntry+8
     ld de,suffix1
-    ; call cp_hlde_b
     call CP_HLDE_B
     ret z
     ld b,3
     ld hl,direntry+8
     ld de,suffix2
     call CP_HLDE_B
-    ; jr cp_hlde_b
     ret
 
-; cp_hlde_b
-;     ld a,(de)
-;     cp (hl)
-;     ret nz
-;     inc de
-;     inc hl
-;     djnz cp_hlde_b
-;     xor a
-;     ret
 
 keytest
     ; up 7
@@ -318,10 +301,6 @@ w_set_act
     ld bc,4
     ldir
     ret
-; ; set max items count for select bar
-; w_set_items_cnt
-;     ld (win_items_cnt),a
-;     ret
 
 ; hl>action table
 w_action_jp
@@ -587,9 +566,6 @@ w_select_down
 1
     call w_draw_select
     ret
-; w_title ; tisk na pozici "0"
-; w_print ; tisk od pozice "1" 
-
 
 downhl
     inc h
@@ -632,12 +608,6 @@ main_draw
     ld b,12
     call w_print_b
 
-
-    ; ld hl,(w_scraddr+1)
-    ; inc hl
-    ; ld (w_scraddr+1),hl
-    ; ld hl,ico_lock
-    ; call w_char_hl
     ld a,(DIMAGESTAT)
     bit 7,a
     call main_draw_lock
@@ -655,7 +625,6 @@ main_draw
 
     call w_print_i
     db "Snapshot",13,0
-    ; db "1234567890123456",13,0
     call w_print_i
     db "Return",13,0
     
@@ -705,7 +674,6 @@ main_select
     jp set_state
 
 main_wprotect_tgl
-    ; ld a,(selected)
     ld a,(win_select_pos)
     cp 2
     jr nc,1f
@@ -724,9 +692,7 @@ main_wprotect_tgl
 main_action
     ld hl,main_select_actions
     jp w_action_jp
-    ; pop hl
-    ; ei
-    ; ret
+
 ; hl<drvstat addr
 get_drvstat
     ld a,(act_mdos_drv)
@@ -743,12 +709,10 @@ get_drvstat_a
 ; hl<dname
 get_drvname
     ld a,(act_mdos_drv)
-    ; ld c,a
     add a,a ; *2
     add a,a ; *4
     ld e,a
     add a,a ; *8
-    ; add a,c ; *9
     add a,e ; *12
     ld e,a
     ld d,0
@@ -764,15 +728,6 @@ eject_b
 eject
     ld (act_mdos_drv),a
     push af
-    ; ld c,a
-    ; add a,a
-    ; add a,a
-    ; add a,c ; a*=5
-    ; ld l,a
-    ; ld h,0
-    ; ld de,DIMAGESTAT
-    ; add hl,de
-
     call get_drvstat
     ld (hl),0
     ld e,l
@@ -782,15 +737,6 @@ eject
     ldir
     pop af
 
-    ; add a,a ; *2
-    ; add a,a ; *4
-    ; ld c,a
-    ; add a,a ; *8
-    ; add a,c ; a*4+a*8
-    ; ld e,a
-    ; ld d,0
-    ; ld hl,DNAMES
-    ; add hl,de
     call get_drvname
     ex de,hl
     ld hl,empty_str
@@ -847,16 +793,11 @@ browser_init
     call VOLUME_SELECT
 
     ld iy,testfp
-    ; ld de,0x196
-    ; ld de,0
-    ; ld hl,0
     ld de,(b_dir_cluster)
     ld hl,(b_dir_cluster+2)
     call CHDIR
 ; tohle resi chdir ne?
     ld de,0
-    ; ld (b_dir_cluster),de
-    ; ld (b_dir_cluster+2),de
     ld (b_pg_start),de
     ld (b_pg_start+2),de
 
@@ -955,17 +896,13 @@ bd_next
 
     ld hl,win_browser+3
     cp (hl)
-    ; cp max_files_per_page    ; todo
     jr z,bd_next_pg
-    ; ld (win_items_cnt),a
     jp bd_next
 
 bd_next_pg
     ld a,(b_page_act)
     ld l,a
     ld h,0
-    ; inc a
-    ; ld (b_page_act),a
     add hl,hl   ; *2
     add hl,hl   ; *4
     ld de,browser_pages
@@ -990,10 +927,7 @@ bd_end
     ld a,(win_items_cnt)
     cp 0
     jp z,br_pg_prev
-    ; jp z,bd_next_pg
-    ; jr nz,1f
-    ; ld hl,(b_pg_start)
-    ; ld hl,(b_pg_start+2)
+
 1
     call w_draw_select
     ld hl,browser_select
@@ -1052,32 +986,11 @@ br_select_down
     jr z,br_pg_next
     ret
 
-    ; ld c,a
-    ; ld a,(win_items_cnt)
-    ; cp max_files_per_page
-    ; jp z,br_pg_next
-    ; cp c
-    ; jr nz,1f
-
-    ; ret
-; 1
 1
     push af
     call w_hide_select
     pop af
-    ; ld a,(win_select_pos)
-    ; inc a
-    ; ld hl,win_browser+3
-    ; ld hl,win_items_cnt
-    ; cp (hl)
-    ; jr z,br_pg_next
 
-
-; pokud aktualni pozice == pocet polozek &&
-; pocet polozek == max_polozek_menu
-; next pg
-
-; 1
     ld (win_select_pos),a
     jp w_draw_select
 
@@ -1096,8 +1009,6 @@ br_pg_prev
     ld (b_pg_start),hl
     ld (b_pg_start+2),hl
     jr br_ppg_exit
-    ; ld hl,browser_refresh
-    ; jp set_state
 1
 ; get "next page from act_page-1"
     ld (b_page_act),a
@@ -1119,9 +1030,6 @@ br_pg_prev
     ld (b_pg_start+2),de
 br_ppg_exit
     call w_hide_select
-    ; ld a,max_files_per_page
-    ; dec a
-    ; ld (win_select_pos),a
     ld hl,browser_draw
     jp set_state
 
@@ -1154,9 +1062,6 @@ br_pg_next
     jp set_state
 
 browser_action
-    ; ld bc,22*256
-    ; call psetpos
-    ; ld a,(b_selected_i)
     ld a,(win_select_pos)
     ld l,a
     ld h,0
@@ -1177,10 +1082,8 @@ browser_action
     call SEEK
     ld de,direntry
     call GET_DIR_ENTRY
-    ; call print_entry
 
     ld a,(direntry+DIR_Attr)
-    ; and 15
     cp ATTR_DIRECTORY
     jr nz,1f
 
@@ -1191,7 +1094,6 @@ browser_action
 ; b_dir_cluster=selected dir cluster
     call w_hide_select
     ld a,0
-    ; ld (b_item_cnt),a
     ld (win_select_pos),a
     ld (b_page_act),a
     ld hl,0
@@ -1220,11 +1122,8 @@ browser_action
     ldir
 
     call get_drvstat
-    ; ld a,(act_sd_drv)
     ld a,(drive_act)
     set 6,a
-    ; ld a,64
-    ; ld (DIMAGESTAT),a
     ld (hl),a
     inc hl
     push hl
@@ -1232,8 +1131,6 @@ browser_action
     ld hl,(direntry+DIR_FstClusHI)
     ld a,0
     call ADDR2LBA
-    ; ld (DIMAGESTAT+1),de
-    ; ld (DIMAGESTAT+3),hl
     ld c,l
     ld b,h
     pop hl
@@ -1245,10 +1142,6 @@ browser_action
     inc hl
     ld (hl),b
 
-    ; ld hl,main_menu
-    ; jp set_state
-    ; ld hl,browser_active
-    ; ld hl,exit
     ld hl,main_init
     jp set_state
 
