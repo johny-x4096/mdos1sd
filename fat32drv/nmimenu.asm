@@ -921,9 +921,16 @@ bd_next_pg
 bd_end
     ei
     ; todo: nefunguje spravne u prazdneho volume
-    ld a,(direntry)
-    cp 0
-    jr z,1f
+    ; ld a,(direntry)
+    ; cp 0
+    ; jr z,1f
+
+    ; is it empty volume?
+    ld hl,b_page_act
+    ld a,(win_items_cnt)
+    or (hl)
+    jr z,bd_empty
+
     ld a,(win_items_cnt)
     cp 0
     jp z,br_pg_prev
@@ -933,6 +940,22 @@ bd_end
     ld hl,browser_select
     jp set_state
 
+bd_empty
+    ld hl,win_info
+    call w_set_act
+    call w_draw
+    call w_title
+    db "Empty volume",13,0
+    call w_print_i
+    db "Select another",0
+1
+    call delay
+    call keytest
+    cp 0
+    jr z,1b
+
+    ld hl,drives_init
+    jp set_state
 
 browser_select
     cp 0
@@ -1305,6 +1328,8 @@ drives_action
     ld hl,browser_init
     jp set_state
 
+
+
 ; drive number,volume number
 drive_act
     db 0
@@ -1410,19 +1435,12 @@ tmpfp
     dw 0,0
     dw 0,0
 
-; testfpx
-;     dw 0,0  ; fpos
-;     dw 0,0  ; size
-;     dw 0x0196,0x0000  ; first cluster
-;     dw 0x0196,0x0000  ; actual cluster
-;     dw 0,0  ; cluster index in file
-
 
 app_state       ; app state machine
     dw 0
-b_dir_cluster   ; zacatek dir
+b_dir_cluster   ; start cluster of dir
     dw 0,0
-b_pg_start      ; fpos v dir
+b_pg_start      ; fpos in dir
     dw 0,0
 b_item_cnt      ; number of items on page
     db 0
@@ -1489,9 +1507,11 @@ win_browser
     db 0,0,30,max_files_per_page
 win_eject
     db 4,4,2,16
-
 win_drives
     db 6,7,18,8
+win_info
+    db 8,9,14,1
+
 
 volume_tmp
     ds 32
