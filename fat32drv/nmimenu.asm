@@ -1,19 +1,17 @@
     DEVICE ZXSPECTRUM48
-    ORG 32768
-    ; org 8192
+    ; ORG 32768
+    org 8192
 start
     jp nmimenu
 
-; tady by melo byt pro oba disky:
-; 4b start souboru
-; todo: sd slot
-; 13b nazev fat32file
-; 10b nazev MDOS disku
+; 1 byte status
+; bit 0 drive 0/1
+; bit 6=1 mounted
+; bit 7=1 write protect
+; 4 byte LBA start
 DIMAGESTAT
     db 0
     dw 0x0000,0x0000
-    ; db 1+128
-    ; dw 0x7730,0
     db 0
     dw 0x0000,0x0000
 DNAMES
@@ -102,7 +100,7 @@ keytest
     ld a,239
     in a,(254)
     bit 3,a
-    jr z,keytest_exit
+    jp z,keytest_exit
     ; down 6
     ld c,'d'
     ld a,253
@@ -161,6 +159,13 @@ keytest
     ld a,253
     in a,(254)
     bit 2,a
+    jr z,keytest_exit
+
+    ; r
+    ld c,'R'
+    ld a,251
+    in a,(254)
+    bit 3,a
     jr z,keytest_exit
 
     ; break
@@ -610,7 +615,7 @@ main_init
     call w_set_act
     call w_draw
     call w_title
-    db "MDOS1SD v0.2",13,0
+    db "MDOS1SD v0.3",13,0
 
     ld a,0
     ld (win_select_pos),a
@@ -700,11 +705,20 @@ main_select
     jp set_state
 
 main_wprotect_tgl
-    call get_drvstat
+    ; ld a,(selected)
+    ld a,(win_select_pos)
+    cp 2
+    jr nc,1f
+    call get_drvstat_a
     ld a,(hl)
+    bit 6,a
+    jr z,1f
     xor 128
     ld (hl),a
     ld hl,main_draw
+    jp set_state
+1
+    ld hl,main_select
     jp set_state
 
 main_action
@@ -716,6 +730,7 @@ main_action
 ; hl<drvstat addr
 get_drvstat
     ld a,(act_mdos_drv)
+get_drvstat_a
     ld c,a
     add a,a
     add a,a
@@ -820,18 +835,6 @@ main_select_actions
     dw return
 
 browser_init
-/*
-    ld de,0
-    ld hl,0
-    ld ix,buff1
-    call SD_READ
-    ld de,(buff1+MBR_Partition1+PT_LbaOfs)
-    ld hl,(buff1+MBR_Partition1+PT_LbaOfs+2)
-    ; ld ix,volume1
-
-    ld ix,volume1
-    call VOLUME_INIT
-*/
     ld a,(drive_act)
     call DRIVE_SELECT
     ld a,(volume_act)
@@ -845,13 +848,15 @@ browser_init
 
     ld iy,testfp
     ; ld de,0x196
-    ld de,0
-    ld hl,0
+    ; ld de,0
+    ; ld hl,0
+    ld de,(b_dir_cluster)
+    ld hl,(b_dir_cluster+2)
     call CHDIR
 ; tohle resi chdir ne?
     ld de,0
-    ld (b_dir_cluster),de
-    ld (b_dir_cluster+2),de
+    ; ld (b_dir_cluster),de
+    ; ld (b_dir_cluster+2),de
     ld (b_pg_start),de
     ld (b_pg_start+2),de
 
@@ -1264,12 +1269,17 @@ drives_init
 
 drives_draw
     ld ix,volume_tmp
+    ld a,(drive_act)
+    ld (drive_tmp),a
     ld a,0
     ld (drive_act),a
     ld (volumes_cnt),a
 print_drv
     ld a,(drive_act)
     call DRIVE_SELECT
+    ld a,(drives_reinit)
+    or a
+    call nz,DRIVE_INIT
     ld a,0
     ld (volume_act),a
 print_part
@@ -1344,6 +1354,9 @@ print_part
     ld a,(volumes_cnt)
     ld (win_items_cnt),a
 
+    ld a,0
+    ld (drives_reinit),a
+
     call w_draw_select
     call w_title
     db "Select volume ",13,0
@@ -1358,14 +1371,28 @@ drives_select
     cp 'd'
     jp z,w_select_down
 
-    ld hl,browser_init
+    cp 'R'
+    jr z,drives_refresh
+    ; ld hl,browser_init
     cp 27
     ; jp z,return
-    jp z,set_state
+    ; jp z,set_state
+    jr z,drives_exit
     cp 13
     ret nz
     ld hl,drives_action
     jp set_state
+
+drives_exit
+    ld a,(drive_tmp)
+    ld (drive_act),a
+    ld hl,browser_init
+    jp set_state
+
+drives_refresh
+    ld a,1
+    ld (drives_reinit),a
+    jp drives_init
 
 drives_action
     ld a,(win_select_pos)
@@ -1379,18 +1406,16 @@ drives_action
     inc hl
     ld a,(hl)
     ld (volume_act),a
-    ; ; todo: nastavit drive no pro nmimenu
-    ; call DRIVE_SELECT
-    ; pop hl
-    ; inc hl
-    ; ld a,(hl)
-    ; ld ix,volume1
-    ; call VOLUME_SELECT
+    ld hl,0
+    ld (b_dir_cluster),hl
+    ld (b_dir_cluster+2),hl
     ld hl,browser_init
     jp set_state
 
 ; drive number,volume number
 drive_act
+    db 0
+drive_tmp
     db 0
 volume_act
     db 1
@@ -1522,6 +1547,8 @@ act_mdos_drv
     db 0
 ; act_sd_drv
 ;     db 0
+drives_reinit
+    db 0
 fentryes
     ds 4*max_files_per_page ; dir pos
 browser_pages
