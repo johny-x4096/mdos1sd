@@ -540,7 +540,7 @@ SNAPR
 
     ld hl,8192+3
     ld de,DIMAGESTAT
-    ld b,10
+    ld b,14
 1
     ld c,(hl)
     ld a,0
@@ -2586,10 +2586,11 @@ FORMAT1
     ld          (ix+0x2),a
     ld          a,(ix+0x7)
     ld          (ix+0x3),a
-    ld          a,(EXTE1)
-    cp          'S'
-    jr          nz,RFO41
-    res         0x4,(ix+0x1)
+    ; ignore SINGLE SIDED parameter
+    ; ld          a,(EXTE1)
+    ; cp          'S'
+    ; jr          nz,RFO41
+    ; res         0x4,(ix+0x1)
 RFO41
     call        ERAVAR
     push        hl
@@ -2602,24 +2603,80 @@ RFO41
     ret         nc
     ld          a,(WORKDR)
     call        DRVSEL
-    call        HOME
-    ld          c,(ix+0x2)
-    bit         0x4,(ix+0x1)
-    jr          z,RFORM5
-    RLC         c
+    ; call        HOME
+    ; prepare sector content, fill 0xe5
+    ld hl,VRAM
+    ld a,0xe5
+    ld b,0
+    call FILLCONST
+    call FILLCONST
+    ; fill attrs with same border/paper, up to last line
+    ld a,(ATTR_P)
+    and 0x38
+    ld b,a
+    rrca
+    rrca
+    rrca
+    or b
+    ld hl,VRAM_ATTR
+    ld de,VRAM_ATTR+1
+    ld bc,735
+    ld (hl),a
+    ldir
+    ; check if image len is 80 or 40 tracks
+    ld a,(WORKDR)
+    call SELIMGSTAT
+    ld c,80
+    bit 5,(hl)
+    jr z,1f ; not 40 tracks
+    ld c,40
+1
+    ld (ix+0x2),c
+    ; ld          c,(ix+0x2)      ; c = tracks per side
+    ; bit         0x4,(ix+0x1)    ; single sided?
+    ; jr          z,RFORM5        
+    RLC         c               ; no, double tracks
 RFORM5
-    ld          b,0x0
+    ld          b,0x0           ; track counter
+  
 RFORM6
     push        bc
-    ld          de,0x100
-    ld          a,(WORKDR)
-    call        BFORMA
+    ; ld          de,0x100
+    ; ld          a,(WORKDR)
+    ; call        BFORMA
+    ld a,b
+    and 7
+    out (0xfe),a
+    
+    ld a,0  ; sector 0
+1
+    push af
+    push bc
+    ld c,a
+    ld hl,VRAM
+    call DWRITESD
+;     ld a,c
+;     or a
+;     jr z,2f
+;     ld a,2
+;     out (254),a
+;     ; jr z,FORMAT_EOF
+; 2
+    pop bc
+    pop af
+    inc a
+    cp 9
+    jr nz,1b
+
+
     pop         bc
-    inc         b
+    inc         b               ; inc track counter
     ld          a,b
-    cp          c
-    jr          nz,RFORM6
+    cp          c               ; all formated?
+    jr          nz,RFORM6       ; no, continue
     dec         b
+
+/*
 FORMTEST
     ld          hl,0xffff
     push        hl
@@ -2659,6 +2716,7 @@ FORMSOK
     cp          c
     jr          nz,FORMTEST2
     djnz        FORMTEST1
+*/
     ld hl,FATBUF
     ld          e,l
     ld          d,h
@@ -2733,18 +2791,18 @@ WTESTFAT
     pop         bc
     ld          de,0x0
 WFAILSEC
-    pop         hl
-    ld          a,h
-    and         l
-    inc         a
-    jr          z,WFATEND
-    push        de
-    ld          de,0xdff
-    call        WRTOFAT
-    pop         de
-    inc         de
-    dec         bc
-    jr          WFAILSEC
+    ; pop         hl
+    ; ld          a,h
+    ; and         l
+    ; inc         a
+    ; jr          z,WFATEND
+    ; push        de
+    ; ld          de,0xdff
+    ; call        WRTOFAT
+    ; pop         de
+    ; inc         de
+    ; dec         bc
+    ; jr          WFAILSEC
 WFATEND
     call        WFATIFCH
     push        de
@@ -2755,13 +2813,15 @@ WFATEND
     RST         RST28
     dw          1601h
     xor         a
-    ld          de,0x14e1
+    ; ld          de,0x14e1
+    ld de,TXTFORM
     call        PRTMES
     pop         bc
     push        bc
     call        BCPRT
     ld          a,0x1
-    ld          de,0x14e1
+    ; ld          de,0x14e1
+    ld de,TXTFORM
     call        PRTMES
     pop         bc
     pop         de
@@ -2770,7 +2830,8 @@ WFATEND
     ld          c,e
     call        BCPRT
     ld          a,0x2
-    ld          de,0x14e1
+    ; ld          de,0x14e1
+    ld de,TXTFORM
     call        PRTMES
     pop         bc
     sla         c
@@ -2781,7 +2842,8 @@ WFATEND
     ld (ix+2),b
     call        NUM24B
     ld          a,0x3
-    ld          de,0x14e1
+    ; ld          de,0x14e1
+    ld de,TXTFORM
     call        PRTMES
     call        ERAVAR
     ld          a,(ATTR_P)
@@ -2799,466 +2861,466 @@ TXTFORM
     db          " bad blocks.\r"
     db          "Total capacity i",0F3h
     db          " Bytes.",08Dh
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
-    db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
+    ; db          0h
     ORG 0x1700
 STANDROM
     ; ret
@@ -5358,6 +5420,8 @@ MAKENEXT
     ld          b,0x3
     ; jp          DOWDCOM
     jp DOOPRET
+
+    ORG 0x248E
 FILLCONST
     ld          (hl),a
     inc         hl
@@ -5766,15 +5830,19 @@ LFNDNULL
 
 ; disk image params
 ; 0:drive status
+;   bit 5:  1 = 40 tracks 
 ;   bit 6:  1 = mounted
 ;   bit 7:  1 = READONLY
-; 1,2,3,4 LBA start - mel by pak byt spis prvni cluster souboru
-
+; 1,2,3,4 LBA start - in future, it will be first cluster of file
+; 5,6 
+;
 DIMAGESTAT
     db 0
     dw 0,0
+    dw 0
     db 0
     dw 0,0
+    dw 0
     ; db 1
     ; dw 0xBA40,0
 
@@ -5796,12 +5864,13 @@ SDDRIVEBYTES
 ; (SDDRVB)<SD DRIVE ACTIVE byte
 SELIMGSTAT
     ld l,a
+    add a,a ; *2
+    ld h,a
+    add a,a ; *4
+    add a,h ; *6
+    add a,l ; *7
+    ld l,a
     ld h,0
-    push hl
-    add hl,hl   ; *2
-    add hl,hl   ; *4
-    pop de
-    add hl,de   ; *5
     ld de,DIMAGESTAT
     add hl,de
     push hl
@@ -5846,8 +5915,9 @@ ADD_LBA_OFF
     pop de
     ret
 
-; hl>DIMAGESTAT
-; hlde<abs LBA sector
+; b>track
+; c>sector
+; hl<abs LOGICAL sector
 FYZLOGSD
     ld l,b
     ld h,0
@@ -5892,10 +5962,7 @@ DREADSD
 SD_READ:
 	; hlde = sector
 	; ix = to address
-    ; call SDIDLE
 ;----
-    ; ld a,(card_select)
-    ; ld a,SD_1
     ld a,(SDDRVB)
 	out (OUT_PORT),a
 
@@ -5917,9 +5984,6 @@ SD_READ:
 	push ix
 	pop hl
 
-	; IF DMA_SD
-	; call dma_read
-	; ELSE
 	ld bc,SPI_PORT
 	inir
 	inir
@@ -5933,8 +5997,6 @@ SD_READ:
 	out (OUT_PORT),a
     out (SPI_PORT),a
 ;----
-
-    ; call SDIDLE
     ld a,e  ; restore R1
 
 
@@ -5948,7 +6010,9 @@ DREADSD_NR  ; disk not mounted/ready
     ld c,128
     jr DREADSD_ERR
 
-
+; hl = from
+; c = sector
+; b = track
 DWRITESD
     push ix
     push hl
@@ -5961,7 +6025,16 @@ DWRITESD
     jr nz,DWRITESD_WP
 
     push hl ; hl=DIMAGESTAT
-    call FYZLOGSD
+    ; ld de,5
+    ; add hl,de
+    ; push hl
+    ; call FYZLOGSD
+    ; pop de
+    ; or a
+    ; sbc hl,de
+    ; add hl,de
+    ; ; nc= log sector>=disk image sec len
+    ; jp nc,DWRITE_EOF
     pop de
     ex de,hl    ; hl = DIMAGESTAT
                 ; de = MDOS logical sector
@@ -5972,8 +6045,6 @@ DWRITESD
 SD_WRITE:
 	; hlde = sector
 	; ix = from address
-
-    ; call SDIDLE
 ;----
     ; ld a,SD_1
     ld a,(SDDRVB)
@@ -5998,8 +6069,6 @@ SD_WRITE:
 
 	xor a
 	; 2b crc
-	; out (c),a
-	; out (c),a
 	out (SPI_PORT),a
 	out (SPI_PORT),a
 
@@ -6018,8 +6087,6 @@ wbsy:
     out (SPI_PORT),a
 ;----
 
-    ; call SDIDLE
-
 	ld a,e
 	and 01fh
 	; a = Data response
@@ -6037,14 +6104,12 @@ DWRITESD_WP
 DWSDERREX
     pop hl
     jr DWRITESD_ERR
+DWRITE_EOF
+    pop hl
+    pop hl
+    ld c,2
+    jr DWRITESD_ERR
 
-; SDIDLE
-; 	ld b,16
-; 	ld a,0ffh
-; sdidl1
-; 	out (SPI_PORT),a
-; 	djnz sdidl1
-;     ret
 
 SD_SENDCMD:
 	ld c,SPI_PORT
@@ -6059,7 +6124,6 @@ SD_SENDCMD:
 	out	(c),a 
 
 WAIT:
-    ; ld b,0
 	ld bc,0
 wloop:
 	in a,(SPI_PORT)
@@ -6070,7 +6134,6 @@ wloop:
 	or c
 	jr nz,wloop
     ld a,0xff
-    ; djnz wloop
 	ret
 
 WAIT_DATA:
@@ -6084,8 +6147,6 @@ wdata_loop:
 	ld a,b
 	or c
 	jr nz,wdata_loop
-    ; djnz wdata_loop
-	; jr WAIT_DATA
     ld a,0xff
 
 	ret
