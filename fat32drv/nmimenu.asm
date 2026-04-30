@@ -9,11 +9,14 @@ start
 ; bit 6=1 mounted
 ; bit 7=1 write protect
 ; 4 byte LBA start
+; 2 byte image len in sectors
 DIMAGESTAT
     db 0
     dw 0x0000,0x0000
+    dw 0
     db 0
     dw 0x0000,0x0000
+    dw 0
 DNAMES
     db "  <select>  "
     db "  <select>  "
@@ -618,7 +621,7 @@ main_draw
     ld hl,DNAMES+12
     ld b,12
     call w_print_b
-    ld a,(DIMAGESTAT+5)
+    ld a,(DIMAGESTAT+7)
     bit 7,a
     call main_draw_lock
     call w_newline
@@ -697,10 +700,12 @@ main_action
 get_drvstat
     ld a,(act_mdos_drv)
 get_drvstat_a
-    ld c,a
-    add a,a
-    add a,a
-    add a,c ; a*=5
+    ld l,a
+    add a,a ; *2
+    ld h,a
+    add a,a ; *4
+    add a,h ; *6
+    add a,l ; *7
     ld l,a
     ld h,0
     ld de,DIMAGESTAT
@@ -1131,6 +1136,7 @@ browser_action
     
     ld hl,browser_draw
     jp set_state
+; action select file
 1
     call get_drvname
     ld de,direntry
@@ -1145,6 +1151,7 @@ browser_action
     ldir
 
     call get_drvstat
+    push hl
     ld a,(drive_act)
     set 6,a
     ld (hl),a
@@ -1164,6 +1171,22 @@ browser_action
     ld (hl),c
     inc hl
     ld (hl),b
+    inc hl
+    ; get filesize>>9 ( /512)
+    ld de,(direntry+DIR_FileSize+1)
+    srl d
+    rr e
+    ld (hl),e
+    inc hl
+    ld (hl),d
+    ; if de>=721, set 40 tracks bit
+    or a
+    ld hl,721
+    sbc hl,de
+    pop hl
+    jr c,1f
+    set 5,(hl)
+1
 
     ld hl,main_init
     jp set_state
