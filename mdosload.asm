@@ -1,6 +1,7 @@
     DEVICE zxspectrum48
     org 32768
 SPLASHSCR   equ 1
+FUN     equ 0
 DIVPORT equ 227
 CONMEM  equ 128
 MAPRAM  equ 64
@@ -67,6 +68,32 @@ init
 ;     pop bc
 ;     call downhl
 ;     djnz 1b
+    IF FUN
+    ld hl,22528
+    ld bc,768
+1
+    ld a,l
+    rrca
+    rrca
+    rrca
+    rrca
+    rrca
+    xor l
+    bit 1,a
+    jr z,2f
+    ld a,23+128
+    jr 3f
+2
+    ld a,56+2+128
+3
+    ld (hl),a
+    inc hl
+    dec bc
+    ld a,b
+    or c
+    jr nz,1b
+    ENDIF
+
     call waitkey
     ENDIF
     di
@@ -109,79 +136,79 @@ waitkey
     jr z,waitkey
     ret
 
-fx
-    ld hl,(var2)
-    inc hl
-    ld (var2),hl
-    push iy
-    call fx0
-    and 31
-    ld d,a
-    call fx0
-    ld e,a
-    push de
-    pop iy
-    ld ix,logo
-    ld c,0
-    ld hl,18432
+; fx
+;     ld hl,(var2)
+;     inc hl
+;     ld (var2),hl
+;     push iy
+;     call fx0
+;     and 31
+;     ld d,a
+;     call fx0
+;     ld e,a
+;     push de
+;     pop iy
+;     ld ix,logo
+;     ld c,0
+;     ld hl,18432
 
 
-    ld e,l
-    ld d,h
-1
-    push hl
-    ld b,32
+;     ld e,l
+;     ld d,h
+; 1
+;     push hl
+;     ld b,32
 
-2
-    xor (iy+0)
-    or (iy+1)
-    and (hl)
-    or (ix+0)
-    ld (de),a
-    inc l
-    inc e
-    inc iy
-    inc ix
-    djnz 2b
-    pop hl
-    ld e,l
-    ld d,h
-    call downhl
-    inc c
-    ld a,c
-    cp 57
+; 2
+;     xor (iy+0)
+;     or (iy+1)
+;     and (hl)
+;     or (ix+0)
+;     ld (de),a
+;     inc l
+;     inc e
+;     inc iy
+;     inc ix
+;     djnz 2b
+;     pop hl
+;     ld e,l
+;     ld d,h
+;     call downhl
+;     inc c
+;     ld a,c
+;     cp 57
 
-    jr nz,1b
-    pop iy
-    ret
+;     jr nz,1b
+;     pop iy
+;     ret
 
-fx0
-    push de
-    push hl
-    ld a,r
-    ld l,a
-    ld a,(var1)
-    add l
-    xor 7
-    rlca
-    add a,31
-    ld (var1),a
-    ld hl,(var2)
-    ld de,29711
-    add hl,de
-    rlc l
-    ld (var2),hl
-    xor l
-    xor h
-    pop hl
-    pop de
-    ret
+; fx0
+;     push de
+;     push hl
+;     ld a,r
+;     ld l,a
+;     ld a,(var1)
+;     add l
+;     xor 7
+;     rlca
+;     add a,31
+;     ld (var1),a
+;     ld hl,(var2)
+;     ld de,29711
+;     add hl,de
+;     rlc l
+;     ld (var2),hl
+;     xor l
+;     xor h
+;     pop hl
+;     pop de
+;     ret
 
-fx1
-var1
-    db 0
-var2
-    dw 0
+; fx1
+; var1
+;     db 0
+; var2
+;     dw 0
 
 logocp
     ld de,logo
