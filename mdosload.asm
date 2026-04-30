@@ -24,6 +24,11 @@ e_zxi_020   equ 0x20
     ENDM
 
 start
+    jp init
+    jp init
+    db "build ",__DATE__," ",__TIME__,0
+
+init
     ; set EXTRA button to Warm reset
     ld bc,e_zxi_port
     ld a,e_zxi_020
@@ -50,21 +55,18 @@ start
     ld bc,msg_len
     call 0x203c
 
-    ld hl,18432
-    ld de,logo
-    ld bc,64
-1
-    push bc
-    push hl
-    ld bc,32
-    ldir
-    pop hl
-    pop bc
-    call downhl
-    djnz 1b
-
-
-    
+;     ld hl,18432
+;     ld de,logo
+;     ld bc,64
+; 1
+;     push bc
+;     push hl
+;     ld bc,32
+;     ldir
+;     pop hl
+;     pop bc
+;     call downhl
+;     djnz 1b
     call waitkey
     ENDIF
     di
@@ -224,12 +226,13 @@ message
     ; db 22,0,0,20,1,"      Vrbice 04/26 PreBeta      "
     ; db 22,0,0,18,1,"  neverejna DEV-TEST verze :-P  ",18,0
     db 22,0,0,16,6,17,2,"  neverejna DEV-TEST verze :-P  ",16,0,17,7
-    db 22,8,4,20,0,"build ",__DATE__," ",__TIME__
+    ; db 22,8,4,20,0,"build ",__DATE__," ",__TIME__
     db 22,7,0,20,1," SD version Johny-X & Flyyn '26 ",13
-    db 22,1,28,20,0,19,1,"v0.4",19,0
-    db 22,10,0,"NMI menu controls",13,13
+    db 22,1,28,20,0,19,1,"v0.5",19,0
+    db 22,10,0,20,0,"       NMI menu controls:       ",20,0,13,13
     db 20,1,"CURSOR",20,0,"/",20,1,"ENTER",20,0,"/",20,1,"BREAK",20,0,13
     db 20,1,"W",20,0," on A/B toggle write protect",13
+    db 20,1,"E",20,0," on A/B eject disc image",13
     db 20,1,"S",20,0," original MDOS SNAPSHOT",13
     db 20,1,"D",20,0," select drive in file browser",13
     db 20,1,"R",20,0," reinit drives in drive select",13,13
