@@ -3,6 +3,9 @@ DIVPORT equ 227
 CONMEM  equ 128
 MAPRAM  equ 64
 BANK128 equ 32765
+BANK_MDOS   equ 0
+BANK_NMI    equ 1
+BANK_SCR    equ 2
     ORG 0
 RST00
     nop
@@ -156,7 +159,7 @@ TESTROUT
     ret
 COLD
     ; set divxxx bank to 0
-    ld a,0
+    ld a,BANK_MDOS
     out (DIVPORT),a
     ; set 48k rom in 128k machine
     ld a,16
@@ -514,10 +517,9 @@ SNAPR
     ld          bc,(IREG2)
     push bc
     im          1
-; tady by se to mozna dalo "riznout"
 ; NMIMENU
     ; store SCR into DIVxxx page 2
-    ld a,2
+    ld a,BANK_SCR
     out (DIVPORT),a
     ld hl,16384
     ld de,8192
@@ -525,15 +527,9 @@ SNAPR
     ldir
 
     ; call NMI menu from DIVxxx page 1
-    ld a,1
+    ld a,BANK_NMI
     out (DIVPORT),a
     call 8192
-
-    ; todo:
-    ; pokud nic, jp SNAPRET
-    ; jinak update DIMAGESTAT
-    ; pokud SNAPSHOT pokracuj
-    ; jinak SNAPRET
 
     ex af,af'
     
@@ -543,11 +539,11 @@ SNAPR
     ld b,14
 1
     ld c,(hl)
-    ld a,0
+    ld a,BANK_MDOS
     out (DIVPORT),a
     ld a,c
     ld (de),a
-    ld a,1
+    ld a,BANK_NMI
     out (DIVPORT),a
     inc hl
     inc de
@@ -555,13 +551,13 @@ SNAPR
     ; jr nz,1b
     djnz 1b
 
-    ld a,2
+    ld a,BANK_SCR
     out (DIVPORT),a
     ld hl,8192
     ld de,16384
     ld bc,6912
     ldir
-    ld a,0
+    ld a,BANK_MDOS
     out (DIVPORT),a
 
     ex af,af'
