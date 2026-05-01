@@ -594,7 +594,7 @@ main_init
     call w_set_act
     call w_draw
     call w_title
-    db "MDOS1SD v0.3",13,0
+    db "MDOS1SD v0.5",13,0
 
     ld a,0
     ld (win_select_pos),a
