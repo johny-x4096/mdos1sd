@@ -11,6 +11,8 @@ Modification of original MDOS 1.0 (01-Sep-92) for SD cards on DIVSD/DIVMMC compa
 * Use NMI button to access NMI menu for selecting disk image
 * Uses DIVxxx MAPRAM mode, so it depends on your interface how handles RESET (Use EXTRA button on eLeMeNt ZX / MB03)
 * If you want to format disk image, **FORMAT only disk images with exact size 368640b (D40) or 737280b (D80)**
+* Here is [Original D40 manual](https://mts.speccy.cz/doc/d40manu.pdf) ([mts.speccy.cz](https://mts.speccy.cz/)) (SK language)
+
 
 ##### TIP:
 
