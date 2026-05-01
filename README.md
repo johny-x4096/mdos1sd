@@ -16,7 +16,7 @@ Modification of original MDOS 1.0 (01-Sep-92) for SD cards on DIVSD/DIVMMC compa
 
 ##### TIP:
 
-Use separate partition for disk images, where you will not delete files. Then you can saffely use esxdos with deleting/modifying/replacing files
+Use separate partition for disk images, where you will not delete files. Then you can safely use esxdos with deleting/modifying/replacing files
 
 
 ## Features:
@@ -89,6 +89,10 @@ Use separate partition for disk images, where you will not delete files. Then yo
   * uses compiled mdos1sd.bin
   * uses compiled nmimenu.bin
   * uses middle part of logo.scr file
+
+## License
+
+Use it as you wish, also "I am not responsible for any data or hair loss" Etc. If you will use all or some part of code, just mention original source. Thank you.
 
 
 > *Source code is currently in a bit "Bordel state", there is many places for improvement, optimization and cleanup, also in mdos source code there are still original routines, which are no longer used. But it works ;-)*
