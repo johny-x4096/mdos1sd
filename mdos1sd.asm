@@ -230,7 +230,8 @@ NODEB
     ld          sp,0x4000
     call        HWINIT
     di
-    ld          sp,0x1019
+    ; ld          sp,0x1019
+    ld sp,FAKESP    ; DivMMC compatibility patch by u880d
     jp          ZXROM
     ORG 0x012F
 RAMERR
@@ -6146,6 +6147,9 @@ wdata_loop:
     ld a,0xff
 
 	ret
+    ORG 0x37f2
+FAKESP
+    dw 1    ; DivMMC compatibility patch by u880d
 
     ORG 0x3800
 DIRBUF  ds      200h
