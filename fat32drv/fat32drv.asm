@@ -1,7 +1,7 @@
     ; DEVICE zxspectrum48
     ; org 32768
-WAIT_DATA_TIMEOUT   equ 512
-WAIT_CMD_TIMEOUT    equ 512
+WAIT_DATA_TIMEOUT   equ 2048
+WAIT_CMD_TIMEOUT    equ 2048
 DIVPORT equ 227
 CONMEM  equ 128
 MAPRAM  equ 64
@@ -172,11 +172,15 @@ VOLUME_SELECT
     ld de,0
     ld hl,0
     call READSEC
+    ; error handling patch by u880d
+    jr z,vol_sel_rdsec_ok
+    pop af
+    jr vserr
 
+vol_sel_rdsec_ok
     pop af
     cp 0    ; todo: detekovat non-partition sd
     jr nz,1f
-tady
     ld hl,buff1+BS_FilSysType
     ld de,fat32sign
     ld b,5
@@ -1229,6 +1233,7 @@ SD_READ:
     out (SPI_PORT),a
 ;----
     ld a,e  ; restore R1
+    or a
     ret
 SD_SENDCMD:
 	ld c,SPI_PORT
