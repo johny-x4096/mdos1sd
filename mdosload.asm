@@ -91,7 +91,7 @@ waitkey
 message
     ; db 22,8,4,20,0,"build ",__DATE__," ",__TIME__
     db 22,7,0,20,1," SD version Johny-X & Flyyn '26 ",13
-    db 22,1,28,20,0,19,1,"v0.5",19,0
+    db 22,1,28,20,0,19,1,"v0.6",19,0
     db 22,9,0,20,0,"       NMI menu controls:       ",20,0,13,13
     db 20,1,"CURSOR",20,0,"/",20,1,"ENTER",20,0,"/",20,1,"BREAK",20,0,13
     db 20,1,"W",20,0," on A/B toggle write protect",13
