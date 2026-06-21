@@ -988,59 +988,55 @@ read_continue
     pop ix
     ret
 
-; SD_IDLE
-; 	ld b,16
-; 	ld a,0ffh
-; 1
-; 	out (SPI_PORT),a
-; 	djnz 1b
-;     ret
-
 ;--------------------
 SD_INIT
-	; call SD_OFF
-	ld a,0xff
-	out (OUT_PORT),a
-	call SD_POWER_ON
-	ld a,(CARD_SELECT)
-	out (OUT_PORT),a
+    ld b,10
 
+sd_init_loop
+    push bc
+	call SD_POWER_ON
 	call SD_RESET
-    cp 255
-    jr z,SD_ERROR
-	; resp = 1
     cp 1
+    jr nz,sd_init_fail
+	; resp = 1
 	call SD_SEND_IF_COND
 	; 0 = OK
-	; cp 0
-	; ret nz
-	cp 1
-	jr z,SD_INIT
+    or a
+    jr nz,sd_init_fail
 	; resp = 0x1AA
 	call SD_OCR
-	ld a,0xff
-	out (OUT_PORT),a
+    or a
+    jr nz,sd_init_fail
+    call SD_POWER_ON
+    pop bc
     xor a   ; no error
 	ret
+sd_init_fail
+    call SD_POWER_ON
+    pop bc
+    djnz sd_init_loop
+    ld a,0xff   ; cannot initialise
+    ret
 
 SD_POWER_ON
 ; Set DI and CS high and apply 74 or more clock pulses to SCLK.
 ; The card will enter its native operating mode and go ready to accept native command.
-	; send 80clocks
+    ld a,0xff
+	out (OUT_PORT),a
+    ; send 80clocks
 	; 10x8bits
 	ld b,10
-	; ld bc,0
-	ld a,255
+	ld a,0xff
 1
-	; ld a,0xff
 	out (SPI_PORT),a
 	djnz 1B
 	ret
 
 SD_RESET
-    ld b,8
-sd_reset_loop
-    push bc
+    ; activate CS for card
+    ld a,(CARD_SELECT)
+    out (OUT_PORT),a
+    ; dummy clock
 	ld a,0xff
 	out (SPI_PORT),a
 	; send CMD_0
@@ -1057,20 +1053,12 @@ sd_reset_loop
 	out (SPI_PORT),a
 
 	call WAIT
-    pop bc
 	cp 1
     ret z
 
-    djnz sd_reset_loop
-    ; jr nz,sd_reset_loop
-
-	; 1 = in idle state, ok
-    ; ret
-
 SD_ERROR
     ld e,a
-	ld a,0xff
-	out (OUT_PORT),a
+    call SD_POWER_ON
     ld a,e
     ret
 
@@ -1092,18 +1080,25 @@ SD_SEND_IF_COND
 	out (SPI_PORT),a
 
 	call WAIT
+    cp 1
+    jr nz,SD_ERROR
 
 	; in a,(SPI_PORT) - from WAIT	; R7 (R1+32bit response)
 	in a,(SPI_PORT)
+    or a
+    jr nz,SD_ERROR
 	in a,(SPI_PORT)
+    or a
+    jr nz,SD_ERROR
 	in a,(SPI_PORT)
+    cp 1
+    jr nz,SD_ERROR
 	in a,(SPI_PORT)
-	; pokud 0x1AA, V2
-	; posli acmd41
-
-
-
-    ld b,10
+    cp 0xAA
+    jr nz,SD_ERROR
+	; if 0x1AA, V2
+	; send acmd41
+    ld b,200
 retry_41
     push bc
 	ld a,0xff
@@ -1116,9 +1111,12 @@ retry_41
 	out (SPI_PORT),a
 	out (SPI_PORT),a
 	; "crc" not needed
+    ld a,0xff
 	out (SPI_PORT),a
 
 	call WAIT
+    cp 2
+    jr nc,cmd55err ;anything >1 = error
 
 	ld a,0xff
 	out (SPI_PORT),a
@@ -1134,7 +1132,7 @@ retry_41
 	out (SPI_PORT),a
 	out (SPI_PORT),a
 	; "crc" not needed
-	ld a,1
+    ld a,0xff
 	out (SPI_PORT),a
 
 	call WAIT
@@ -1144,12 +1142,15 @@ retry_41
 	; 1 = still in idle
     pop bc
 	; cp 1
-    cp 0
+    or a
     ret z
     djnz retry_41
 	; jr z,retry_41
-
+    ld a,0xff   ; timeout
 	ret
+cmd55err
+    pop bc
+    jr SD_ERROR
 
 SD_OCR
 	ld a,CMD_58
