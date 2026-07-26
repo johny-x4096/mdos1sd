@@ -3,6 +3,7 @@ DIVPORT equ 227
 CONMEM  equ 128
 MAPRAM  equ 64
 BANK128 equ 32765
+P3ROM   equ 0x1ffd
 BANK_MDOS   equ 0
 BANK_NMI    equ 1
 BANK_SCR    equ 2
@@ -161,7 +162,10 @@ COLD
     ; set divxxx bank to 0
     ld a,BANK_MDOS
     out (DIVPORT),a
-    ; set 48k rom in 128k machine
+    ; set 48k rom in 128k and +3 machine
+    ld a,4
+    ld bc,P3ROM
+    out (c),a
     ld a,16
     ld bc,BANK128
     out (c),a
