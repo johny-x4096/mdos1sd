@@ -1070,6 +1070,7 @@ SD_SEND_IF_COND
 	out (SPI_PORT),a
 	xor a
 	out (SPI_PORT),a
+	xor a               ; more time for DIVMMC
 	out (SPI_PORT),a
 	ld a,1
 	out (SPI_PORT),a
@@ -1150,7 +1151,7 @@ retry_41
 	ret
 cmd55err
     pop bc
-    jr SD_ERROR
+    jp SD_ERROR
 
 SD_OCR
 	ld a,CMD_58
@@ -1239,9 +1240,13 @@ SD_READ:
 SD_SENDCMD:
 	ld c,SPI_PORT
 	out (c),a
+    nop         ; DIVMMC needs more time
 	out (c),h
+    nop
 	out (c),l
+    nop
 	out (c),d
+    nop
 	out (c),e
 
 	; xor a

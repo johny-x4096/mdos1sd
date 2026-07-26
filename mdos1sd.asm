@@ -6111,9 +6111,13 @@ DWRITE_EOF
 SD_SENDCMD:
 	ld c,SPI_PORT
 	out (c),a
+    nop         ; DIVMMC needs more time
 	out (c),h
+    nop
 	out (c),l
+    nop
 	out (c),d
+    nop
 	out (c),e
 
 	; xor a
