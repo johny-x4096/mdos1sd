@@ -1,5 +1,7 @@
     DEVICE ZXSPECTRUM48
     ; ORG 32768
+AY_REG  equ 0xFFFD
+AY_DATA equ 0xBFFD
     org 8192
 start
     jp nmimenu
@@ -37,6 +39,21 @@ dispatch_state
     ld hl,(app_state)
     jp (hl)
 
+ay_vol_off
+    ld a,8
+    ld e,0
+
+    ld b,3
+1
+    push bc
+    ld bc,AY_REG
+    out (c),a
+    ld bc,AY_DATA
+    out (c),e
+    pop bc
+    inc a
+    djnz 1b
+    ret
 
 print_entry
     ld a,(direntry+DIR_Attr)
@@ -589,12 +606,13 @@ downhl2
     ret
 
 main_init
+    call ay_vol_off
     call cls
     ld hl,win_main
     call w_set_act
     call w_draw
     call w_title
-    db "MDOS1SD v0.7",13,0
+    db "MDOS1SD v0.7b",13,0
 
     ld a,0
     ld (win_select_pos),a
