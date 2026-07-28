@@ -39,6 +39,7 @@ Use separate partition for disk images, where you will not delete files. Then yo
   * 2 for storing ZX screen during NMI
   * You can change this in mdos1sd.asm and mdosload.asm equates
 * Works with 128K machines (unlike original D40/D80  interface due to ports conflicts) - but not 128K basic (of course)
+* Works with +3 memory paging (on reset sets properly 48k rom)
 * On reset, there is "positive blue screen" instead of original "red hell screen". But it is much faster than original reset on D40/D80 hardware, so propably it will not annoy anyone
 * On eLeMeNt ZX and MB03, use EXTRA button for reset (normal reset resets DIVxxx mapram)
 * On eLeMeNt ZX and MB03, can run with zx rom in URAM
@@ -51,6 +52,7 @@ Use separate partition for disk images, where you will not delete files. Then yo
   * E to eject
   * S to make (original) MDOS SNAPSHOT (inside disk image)
   * BREAK to exit
+  * Turn off AY volume (currently only first AY chip)
 * File browser
   * Shows only .D40 or .D80 files
   * No files sorting.
@@ -89,6 +91,11 @@ Use separate partition for disk images, where you will not delete files. Then yo
   * uses compiled mdos1sd.bin
   * uses compiled nmimenu.bin
   * uses middle part of logo.scr file
+
+## Thanks
+* Flyyn for MDOS1 dissasembly and +3 paging suggestion
+* U880D for DivMMC testing DivMMC compatible page out patch
+* Dizzy for DivMMC testing and fixing SPI outs for compatibility
 
 ## License
 
