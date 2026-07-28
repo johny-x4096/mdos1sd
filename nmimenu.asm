@@ -41,18 +41,15 @@ dispatch_state
 
 ay_vol_off
     ld a,8
-    ld e,0
-
-    ld b,3
+    ld de,3*256 ; d=3
 1
-    push bc
     ld bc,AY_REG
     out (c),a
     ld bc,AY_DATA
     out (c),e
-    pop bc
     inc a
-    djnz 1b
+    dec d
+    jr nz,1b
     ret
 
 print_entry
