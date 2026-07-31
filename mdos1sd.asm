@@ -5991,7 +5991,9 @@ SD_READ:
 	; ENDIF
 
 	; 2b crc
+    nop
 	in a,(SPI_PORT)
+    nop
 	in a,(SPI_PORT)
 ;----
 	ld a,255
@@ -6071,6 +6073,7 @@ SD_WRITE:
 	xor a
 	; 2b crc
 	out (SPI_PORT),a
+    nop
 	out (SPI_PORT),a
 
 	call WAIT

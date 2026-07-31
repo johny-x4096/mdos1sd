@@ -1227,7 +1227,9 @@ SD_READ:
 	; ENDIF
 
 	; 2b crc
+    nop
 	in a,(SPI_PORT)
+    nop
 	in a,(SPI_PORT)
 ;----
 	ld a,255
