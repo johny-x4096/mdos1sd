@@ -6031,7 +6031,7 @@ DWRITESD
     ; ld de,5
     ; add hl,de
     ; push hl
-    ; call FYZLOGSD
+    call FYZLOGSD
     ; pop de
     ; or a
     ; sbc hl,de
