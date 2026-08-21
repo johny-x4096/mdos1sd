@@ -37,7 +37,11 @@ init
     out (c),a
 
     di
-    ld a,CONMEM+MAPRAM  ; reset MAPRAM (eZX/MB03)
+; > z00m: ZX Next fix
+; ld a,CONMEM+MAPRAM  ; reset MAPRAM (eZX/MB03)
+    call 0x1ffb
+    ld a,CONMEM
+; <
     out (DIVPORT),a
     ld a,BANK_EEPROM|CONMEM
     out (DIVPORT),a
