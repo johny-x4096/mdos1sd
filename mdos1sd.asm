@@ -160,24 +160,6 @@ TESTROUT
     ret
 COLD
     ; set divxxx bank to 0
-; !!!! JEN TEST
-    xor a
-    ld b,0
-1
-    push bc
-    ld b,0
-2
-    and 7
-    out (254),a
-    inc a
-    nop
-    nop
-    nop
-    nop
-    djnz 2b
-    pop bc
-    djnz 1b
-; !!!!
 1
     ld a,BANK_MDOS
     out (DIVPORT),a
